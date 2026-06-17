@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<title>Football 3D</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#000; font-family:system-ui,sans-serif; }
+#c { width:100%; height:100%; touch-action:none; display:block; }
+#hud {
+  position:fixed; top:0; left:0; right:0;
+  display:flex; justify-content:center; align-items:center; gap:40px;
+  padding:10px 20px;
+  background:linear-gradient(to bottom,rgba(0,0,0,0.75),transparent);
+  pointer-events:none; z-index:10;
+}
+.tscore { text-align:center; }
+.tlabel { font-size:11px; color:rgba(255,255,255,0.55); letter-spacing:1px; text-transform:uppercase; }
+.tnum   { font-size:50px; font-weight:700; color:#fff; line-height:1; }
+#clock  { font-size:22px; color:#fff; font-weight:500; padding-top:16px; min-width:64px; text-align:center; }
+#overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.82);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:20; color:#fff;
+}
+#overlay h1 { font-size:38px; font-weight:700; margin-bottom:10px; }
+#overlay .sub { font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:4px; }
+#overlay button {
+  margin-top:22px; padding:13px 40px;
+  background:#fff; color:#111; border:none; border-radius:9px;
+  font-size:16px; font-weight:600; cursor:pointer;
+}
+#overlay button:hover { background:#ddd; }
+#goalbanner {
+  position:fixed; inset:0; display:none; pointer-events:none;
+  align-items:center; justify-content:center; z-index:15;
+}
+#goalbanner span {
+  font-size:90px; font-weight:900; color:#fff;
+  text-shadow:0 0 60px rgba(255,210,0,1), 0 0 20px rgba(0,0,0,0.8);
+  animation:pop .25s ease-out;
+}
+@keyframes pop { from{transform:scale(0.3);opacity:0} 70%{transform:scale(1.1)} to{transform:scale(1);opacity:1} }
+#hint {
+  position:fixed; bottom:10px; left:0; right:0;
+  text-align:center; font-size:11px; color:rgba(255,255,255,0.3);
+  pointer-events:none; z-index:10;
+}
+#gpstatus {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%);
+  font-size:12px; color:rgba(255,255,255,0.4);
+  pointer-events:none; z-index:10;
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="tscore"><div class="tlabel">🔵 Home</div><div class="tnum" id="s1">0</div></div>
+  <div id="clock">2:00</div>
+  <div class="tscore"><div class="tlabel">Away 🔴</div><div class="tnum" id="s2">0</div></div>
+</div>
+<div id="gpstatus">🎮 אין שלט מחובר</div>
+<div id="goalbanner"><span>⚽ GOAL!</span></div>
+<div id="overlay">
+  <h1>⚽ Football 3D</h1>
+  <p class="sub">🎮 שלט Xbox: ג'ויסטיק שמאלי לזוז • כפתור B לתפוס ולבעוט</p>
+  <p class="sub">⌨️ מקלדת: WASD + Space (שחקן 1) &nbsp;|&nbsp; חצים + Enter (שחקן 2)</p>
+  <button id="startBtn">התחל משחק</button>
+</div>
+<div id="hint">🎮 Stick לזוז • B לתפוס/לבעוט • גלגלת עכבר לזום</div>
+
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/cannon.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const engine = new BABYLON.Engine(canvas, true, {preserveDrawingBuffer:true});
+const scene  = new BABYLON.Scene(engine);
+scene.enablePhysics(new BABYLON.Vector3(0,-9.81,0), new BABYLON.CannonJSPlugin());
+scene.clearColor = new BABYLON.Color4(0.05,0.08,0.15,1);
+scene.fogMode    = BABYLON.Scene.FOGMODE_EXP2;
+scene.fogColor   = new BABYLON.Color3(0.05,0.08,0.15);
+scene.fogDensity = 0.008;
+
+// Camera
+const cam = new BABYLON.ArcRotateCamera("cam",-Math.PI/2,Math.PI/3.5,85,BABYLON.Vector3.Zero(),scene);
+cam.lowerRadiusLimit=35; cam.upperRadiusLimit=140;
+cam.upperBetaLimit=Math.PI/2.1; cam.wheelPrecision=4;
+cam.attachControl(canvas,true);
+
+// Lights
+const hemi = new BABYLON.HemisphericLight("h",new BABYLON.Vector3(0,1,0),scene);
+hemi.intensity=0.5; hemi.groundColor=new BABYLON.Color3(0.08,0.12,0.08);
+
+[[-57,-42],[57,-42],[57,42],[-57,42]].forEach(([x,z])=>{
+  const sl=new BABYLON.SpotLight("fl"+x+z,new BABYLON.Vector3(x,42,z),
+    new BABYLON.Vector3(-x*0.025,-1,-z*0.025).normalize(),Math.PI/2.6,1.1,scene);
+  sl.intensity=2500; sl.diffuse=new BABYLON.Color3(1,0.97,0.88);
+});
+
+// ── MATERIALS ────────────────────────────────────────────────────────────────
+function stdMat(name,hex,spec=0.05){
+  const m=new BABYLON.StandardMaterial(name,scene);
+  m.diffuseColor=BABYLON.Color3.FromHexString(hex);
+  m.specularColor=new BABYLON.Color3(spec,spec,spec);
+  return m;
+}
+const mGrass=stdMat("g","#1a7a2e");
+const mGrassDk=stdMat("gd","#145e22");
+const mLine=stdMat("l","#ffffff",0.1);
+const mConc=stdMat("c","#5a5a62");
+const mSeat=stdMat("s","#1535a0");
+const mPost=stdMat("p","#eeeeee",0.3);
+const mTrack=stdMat("tr","#b04810");
+const mNet=stdMat("n","#cccccc");
+mNet.alpha=0.3;
+const mRoof=stdMat("r","#444450");
+const mTower=stdMat("tw","#3a3a42");
+
+// ── PITCH ─────────────────────────────────────────────────────────────────────
+function box(name,x,y,z,w,h,d,mat,physics=false){
+  const b=BABYLON.MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},scene);
+  b.position.set(x,y,z); b.material=mat;
+  if(physics) b.physicsImpostor=new BABYLON.PhysicsImpostor(b,BABYLON.PhysicsImpostor.BoxImpostor,{mass:0,restitution:0.4,friction:0.6},scene);
+  return b;
+}
+
+// Ground physics (invisible)
+const gnd=box("gnd",0,-0.1,0,200,0.2,200,mGrass,true);
+gnd.isVisible=false;
+
+// Grass
+box("grass",0,0,0,107,0.15,70,mGrass);
+
+// Stripes
+for(let i=0;i<8;i+=2){
+  box("str"+i,-52.5+(107/8)*i+(107/16),0.08,0,107/8,0.05,70,mGrassDk);
+}
+
+// Track
+box("trkN",0,0.08,-36,115,0.06,3.5,mTrack);
+box("trkS",0,0.08, 36,115,0.06,3.5,mTrack);
+box("trkW",-57,0.08,0,3.5,0.06,70,mTrack);
+box("trkE", 57,0.08,0,3.5,0.06,70,mTrack);
+
+// Lines
+function ln(x,y,z,w,d){ return box("ln"+Math.random().toFixed(4),x,y,z,w,0.06,d,mLine); }
+const ly=0.16;
+ln(0,ly,-34,107,0.18); ln(0,ly,34,107,0.18);
+ln(-53.5,ly,0,0.18,68); ln(53.5,ly,0,0.18,68);
+ln(0,ly,0,0.18,68);
+[-53.5,53.5].forEach(gx=>{
+  const s=gx>0?1:-1;
+  ln(gx-s*8.25,ly,0,0.18,40.3);
+  ln(gx-s*16.5,ly,-20.15,16.5,0.18);
+  ln(gx-s*16.5,ly,20.15,16.5,0.18);
+  ln(gx-s*2.75,ly,0,0.18,18.3);
+  ln(gx-s*5.5,ly,-9.15,5.5,0.18);
+  ln(gx-s*5.5,ly,9.15,5.5,0.18);
+  // Penalty spot
+  box("ps"+gx,gx-s*11,ly,0,0.4,0.06,0.4,mLine);
+});
+// Center circle
+for(let i=0;i<48;i++){
+  const a1=i/48*Math.PI*2, a2=(i+1)/48*Math.PI*2;
+  const mx=(Math.cos(a1)+Math.cos(a2))*9.15/2;
+  const mz=(Math.sin(a1)+Math.sin(a2))*9.15/2;
+  const seg=ln(mx,ly,mz,2*9.15*Math.sin(Math.PI/48)+0.05,0.18);
+  seg.rotation.y=-Math.atan2(Math.sin(a2)-Math.sin(a1),Math.cos(a2)-Math.cos(a1));
+}
+box("cspot",0,ly,0,0.4,0.06,0.4,mLine);
+
+// ── GOALS ─────────────────────────────────────────────────────────────────────
+function makeGoal(gx){
+  const s=gx>0?1:-1, r=0.09, H=2.44, W=7.32, D=2;
+  // Posts
+  [[-W/2],[W/2]].forEach(([z])=>{
+    box("gp"+gx+z,gx,H/2,z,r,H,r,mPost,true);
+    box("gbp"+gx+z,gx+s*D,H/2,z,r,H,r,mPost,true);
+  });
+  box("gcb"+gx,gx,H,0,r,r,W,mPost,true);
+  box("gcbb"+gx,gx+s*D,H,0,r,r,W,mPost,true);
+  box("gsl"+gx,gx+s*D/2,H,-W/2,D,r,r,mPost);
+  box("gsr"+gx,gx+s*D/2,H,W/2,D,r,r,mPost);
+  // Net
+  box("nback"+gx,gx+s*D,H/2,0,0.06,H,W,mNet);
+  box("ntop"+gx,gx+s*D/2,H,0,D,0.06,W,mNet);
+  box("nL"+gx,gx+s*D/2,H/2,-W/2,D,H,0.06,mNet);
+  box("nR"+gx,gx+s*D/2,H/2,W/2,D,H,0.06,mNet);
+  // Goal line collider (invisible wall behind goal)
+  const wall=box("gwall"+gx,gx+s*(D+0.3),H/2,0,0.2,H+1,W+1,mConc);
+  wall.isVisible=false;
+  wall.physicsImpostor=new BABYLON.PhysicsImpostor(wall,BABYLON.PhysicsImpostor.BoxImpostor,{mass:0,restitution:0.3},scene);
+}
+makeGoal(53.5); makeGoal(-53.5);
+
+// Wall colliders
+function wall(x,y,z,w,h,d){
+  const m=box("wall"+Math.random().toFixed(4),x,y,z,w,h,d,mConc);
+  m.isVisible=false;
+  m.physicsImpostor=new BABYLON.PhysicsImpostor(m,BABYLON.PhysicsImpostor.BoxImpostor,{mass:0,restitution:0.4},scene);
+}
+wall(0,2,-35.5,115,4,0.3);
+wall(0,2,35.5,115,4,0.3);
+
+// ── STANDS ────────────────────────────────────────────────────────────────────
+[-1,1].forEach(side=>{
+  const bz=side*46;
+  for(let t=0;t<3;t++){
+    const tz=bz+side*(t*6+3), th=(t+1)*5.5;
+    box("sc"+t+side,0,th/2-0.1,tz,118,th,6.5,mConc);
+    for(let i=0;i<120;i++){
+      const sx=-60+i*1.02;
+      box("st"+t+side+i,sx,th+0.18,tz,0.82,0.55,0.5,mSeat);
+    }
+  }
+  box("rf"+side,0,18,bz+side*10,120,0.6,20,mRoof);
+});
+[-1,1].forEach(side=>{
+  const bx=side*66;
+  for(let t=0;t<3;t++){
+    const tx=bx+side*(t*6+3), th=(t+1)*5.5;
+    box("ec"+t+side,tx,th/2-0.1,0,6.5,th,78,mConc);
+    for(let i=0;i<80;i++){
+      const sz=-40+i*1.02;
+      box("et"+t+side+i,tx,th+0.18,sz,0.5,0.55,0.82,mSeat);
+    }
+  }
+  box("erf"+side,bx+side*10,18,0,20,0.6,80,mRoof);
+});
+
+// ── FLOODLIGHTS ───────────────────────────────────────────────────────────────
+[[-59,-44],[59,-44],[59,44],[-59,44]].forEach(([x,z])=>{
+  box("pole"+x+z,x,19,z,1.1,38,1.1,mTower);
+  box("bar"+x+z,x,39,z,7,0.8,4,mTower);
+  for(let i=0;i<5;i++){
+    const bx2=x+(i-2)*1.2;
+    const bm=new BABYLON.StandardMaterial("blb"+x+z+i,scene);
+    bm.emissiveColor=new BABYLON.Color3(1,0.97,0.85);
+    const bulb=BABYLON.MeshBuilder.CreateSphere("b"+x+z+i,{diameter:0.55},scene);
+    bulb.position.set(bx2,38.5,z); bulb.material=bm;
+  }
+});
+
+// ── SCOREBOARD ───────────────────────────────────────────────────────────────
+[-1,1].forEach(side=>{
+  const z=side*-62;
+  box("sbp1"+side,side*9,11,z,0.9,22,0.9,mTower);
+  box("sbp2"+side,-side*9,11,z,0.9,22,0.9,mTower);
+  box("sbscr"+side,0,19,z,22,7.5,0.5,stdMat("sb"+side,"#050510"));
+  const mH=stdMat("sh"+side,"#1030b0");
+  const mA=stdMat("sa"+side,"#b01020");
+  box("sbh"+side,-4,19,z+0.3,6,3.5,0.2,mH);
+  box("sba"+side,4,19,z+0.3,6,3.5,0.2,mA);
+  box("sbsp"+side,0,14,z+0.3,20,2,0.2,stdMat("sbs"+side,"#e8c000"));
+});
+
+// ── BALL ──────────────────────────────────────────────────────────────────────
+const ballMesh=BABYLON.MeshBuilder.CreateSphere("ball",{diameter:0.44,segments:14},scene);
+const bm=new BABYLON.StandardMaterial("bm",scene);
+bm.diffuseColor=new BABYLON.Color3(0.95,0.95,0.92);
+bm.specularColor=new BABYLON.Color3(0.4,0.4,0.4);
+ballMesh.material=bm;
+ballMesh.position.set(0,0.3,0);
+ballMesh.physicsImpostor=new BABYLON.PhysicsImpostor(
+  ballMesh,BABYLON.PhysicsImpostor.SphereImpostor,{mass:0.45,restitution:0.65,friction:0.5},scene);
+const pm2=new BABYLON.StandardMaterial("pm2",scene);
+pm2.diffuseColor=new BABYLON.Color3(0.08,0.08,0.08);
+for(let i=0;i<5;i++){
+  const a=(i/5)*Math.PI*2;
+  const p=BABYLON.MeshBuilder.CreateBox("bp"+i,{width:0.09,height:0.07,depth:0.09},scene);
+  p.position.set(Math.cos(a)*0.18,0.3,Math.sin(a)*0.18);
+  p.material=pm2; p.isPickable=false;
+}
+
+// ── PLAYERS ───────────────────────────────────────────────────────────────────
+function makePlayer(colorHex,name){
+  const root=new BABYLON.TransformNode(name,scene);
+  const cm=new BABYLON.StandardMaterial(name+"cm",scene);
+  cm.diffuseColor=BABYLON.Color3.FromHexString(colorHex);
+  const sm=new BABYLON.StandardMaterial(name+"sm",scene);
+  sm.diffuseColor=new BABYLON.Color3(0.94,0.76,0.58);
+  const body=BABYLON.MeshBuilder.CreateCapsule(name+"b",{height:1.6,radius:0.33,tessellation:8},scene);
+  body.position.set(0,0.95,0); body.material=cm; body.parent=root;
+  const head=BABYLON.MeshBuilder.CreateSphere(name+"h",{diameter:0.52,segments:8},scene);
+  head.position.set(0,1.9,0); head.material=sm; head.parent=root;
+  // Direction indicator (small dot in front)
+  const dot=BABYLON.MeshBuilder.CreateSphere(name+"d",{diameter:0.2},scene);
+  dot.position.set(0,2.6,0); dot.material=cm; dot.parent=root;
+  return root;
+}
+
+const p1mesh=makePlayer("#3B82F6","p1");
+const p2mesh=makePlayer("#EF4444","p2");
+
+// ── GAME STATE ────────────────────────────────────────────────────────────────
+let score=[0,0], timeLeft=120, matchRunning=false, processingGoal=false;
+let timerInt=null;
+
+function updateHUD(){
+  document.getElementById('s1').textContent=score[0];
+  document.getElementById('s2').textContent=score[1];
+  const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  document.getElementById('clock').textContent=m+':'+(s<10?'0':'')+s;
+}
+
+function showGoal(cb){
+  const b=document.getElementById('goalbanner');
+  b.style.display='flex';
+  setTimeout(()=>{b.style.display='none';cb();},2500);
+}
+
+// ── INPUT ─────────────────────────────────────────────────────────────────────
+const keys={};
+document.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+  if(['Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+});
+document.addEventListener('keyup',e=>keys[e.code]=false);
+
+// Gamepad status display
+setInterval(()=>{
+  const gps=[...navigator.getGamepads()].filter(Boolean);
+  document.getElementById('gpstatus').textContent =
+    gps.length===0 ? '⌨️ מקלדת בלבד' :
+    gps.length===1 ? '🎮 שלט 1 מחובר' : `🎮 ${gps.length} שלטים מחוברים`;
+},500);
+
+const DEAD=0.15;
+let bWas=[false,false];
+
+function getInput(idx){
+  const gps=[...navigator.getGamepads()].filter(Boolean);
+  const gp=gps[idx]||null;
+  let ax=0,ay=0,bDown=false;
+  if(gp){
+    ax=Math.abs(gp.axes[0])>DEAD?gp.axes[0]:0;
+    ay=Math.abs(gp.axes[1])>DEAD?gp.axes[1]:0;
+    bDown=!!(gp.buttons[1]&&gp.buttons[1].pressed);
+  }
+  if(idx===0){
+    if(!gp||(!ax&&!ay)){
+      if(keys['KeyA'])ax=-1; if(keys['KeyD'])ax=1;
+      if(keys['KeyW'])ay=-1; if(keys['KeyS'])ay=1;
+    }
+    bDown=bDown||!!keys['Space'];
+  } else {
+    if(!gp||(!ax&&!ay)){
+      if(keys['ArrowLeft'])ax=-1; if(keys['ArrowRight'])ax=1;
+      if(keys['ArrowUp'])ay=-1;   if(keys['ArrowDown'])ay=1;
+    }
+    bDown=bDown||!!keys['Enter'];
+  }
+  const mag=Math.hypot(ax,ay);
+  if(mag>1){ax/=mag;ay/=mag;}
+  return{ax,ay,bDown};
+}
+
+// ── PLAYER STATE ──────────────────────────────────────────────────────────────
+const SPEED=9,CARRY=0.88,KICK=22,KCD=28;
+const pMesh=[p1mesh,p2mesh];
+const pSt=[
+  {hasBall:false,cd:0,dx:0,dz:1,bWas:false},
+  {hasBall:false,cd:0,dx:0,dz:-1,bWas:false}
+];
+
+function resetAll(){
+  pMesh[0].position.set(-12,0,0);
+  pMesh[1].position.set(12,0,0);
+  pSt[0].hasBall=false; pSt[0].cd=0;
+  pSt[1].hasBall=false; pSt[1].cd=0;
+  ballMesh.physicsImpostor.setLinearVelocity(BABYLON.Vector3.Zero());
+  ballMesh.physicsImpostor.setAngularVelocity(BABYLON.Vector3.Zero());
+  ballMesh.position.set(0,0.3,0);
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────────────────
+scene.registerBeforeRender(()=>{
+  if(!matchRunning||processingGoal) return;
+  const dt=engine.getDeltaTime()/1000;
+
+  for(let i=0;i<2;i++){
+    const p=pMesh[i], ps=pSt[i];
+    const{ax,ay,bDown}=getInput(i);
+
+    p.position.x=Math.max(-51,Math.min(51,p.position.x+ax*SPEED*dt));
+    p.position.z=Math.max(-33,Math.min(33,p.position.z+ay*SPEED*dt));
+    p.position.y=0;
+
+    if(Math.hypot(ax,ay)>0.1){ps.dx=ax;ps.dz=ay;}
+    p.rotation.y=Math.atan2(ps.dx,ps.dz);
+    if(ps.cd>0) ps.cd--;
+
+    const bPressed=bDown&&!ps.bWas;
+    ps.bWas=bDown;
+
+    if(bPressed&&ps.cd===0){
+      if(ps.hasBall){
+        ps.hasBall=false;
+        ballMesh.physicsImpostor.setLinearVelocity(
+          new BABYLON.Vector3(ps.dx*KICK,4,ps.dz*KICK));
+        ps.cd=KCD;
+      } else {
+        const d=Math.hypot(ballMesh.position.x-p.position.x,ballMesh.position.z-p.position.z);
+        if(d<2.0&&!pSt[0].hasBall&&!pSt[1].hasBall){
+          ps.hasBall=true;
+        }
+      }
+    }
+
+    // Auto-collect
+    if(!ps.hasBall&&ps.cd===0){
+      const d=Math.hypot(ballMesh.position.x-p.position.x,ballMesh.position.z-p.position.z);
+      if(d<1.0&&!pSt[0].hasBall&&!pSt[1].hasBall){
+        ps.hasBall=true;
+      }
+    }
+
+    if(ps.hasBall){
+      ballMesh.physicsImpostor.setLinearVelocity(BABYLON.Vector3.Zero());
+      ballMesh.physicsImpostor.setAngularVelocity(BABYLON.Vector3.Zero());
+      ballMesh.position.set(p.position.x+ps.dx*CARRY,0.3,p.position.z+ps.dz*CARRY);
+    }
+  }
+
+  // Tackle
+  for(let i=0;i<2;i++){
+    const j=1-i;
+    if(pSt[j].hasBall&&pSt[i].cd===0){
+      const d=Math.hypot(pMesh[i].position.x-pMesh[j].position.x,pMesh[i].position.z-pMesh[j].position.z);
+      if(d<1.5){
+        pSt[j].hasBall=false;
+        pSt[i].hasBall=true;
+        pSt[j].cd=30;
+      }
+    }
+  }
+
+  // Goal detection
+  const bx=ballMesh.position.x, bz=ballMesh.position.z;
+  if(Math.abs(bz)<3.66){
+    if(bx<-53.8){goalScored(1);return;}
+    if(bx>53.8){goalScored(0);return;}
+  }
+});
+
+function goalScored(who){
+  if(processingGoal) return;
+  processingGoal=true;
+  pSt[0].hasBall=false; pSt[1].hasBall=false;
+  score[who]++;
+  updateHUD();
+  showGoal(()=>{resetAll();processingGoal=false;});
+}
+
+// ── START ─────────────────────────────────────────────────────────────────────
+document.getElementById('startBtn').addEventListener('click',()=>{
+  document.getElementById('overlay').style.display='none';
+  score=[0,0]; timeLeft=120; updateHUD(); resetAll();
+  matchRunning=true;
+  if(timerInt) clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    if(!matchRunning) return;
+    timeLeft--; updateHUD();
+    if(timeLeft<=0){matchRunning=false;endMatch();}
+  },1000);
+});
+
+function endMatch(){
+  matchRunning=false;
+  const ov=document.getElementById('overlay');
+  document.getElementById('overlay').querySelector('h1').textContent=
+    score[0]>score[1]?'🔵 Home ניצח!':score[1]>score[0]?'🔴 Away ניצח!':'תיקו! 🤝';
+  document.getElementById('overlay').querySelectorAll('.sub')[0].textContent=score[0]+' - '+score[1];
+  document.getElementById('startBtn').textContent='שחק שוב';
+  ov.style.display='flex';
+}
+
+resetAll();
+engine.runRenderLoop(()=>scene.render());
+window.addEventListener('resize',()=>engine.resize());
+</script>
+</body>
+</html>
