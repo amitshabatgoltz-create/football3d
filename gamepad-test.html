@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>בדיקת שלט</title>
+<style>
+:root{--bg:#0b1220;--fg:#e6edf7;--mut:#8a97ad;--ok:#b8ff3b;--bad:#ff7a6b;--card:#131c2e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,Segoe UI,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px;gap:12px}
+h1{margin:0;font-size:22px}
+#status{font-size:18px;font-weight:700;text-align:center}
+#field{position:relative;width:min(90vw,520px);aspect-ratio:1;background:#1d6b35;border:3px solid #fff;border-radius:12px;overflow:hidden}
+#field::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid rgba(255,255,255,.5)}
+#dot{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:#fff;box-shadow:0 0 0 4px #000;left:50%;top:50%;z-index:1;transition:background .1s}
+.card{background:var(--card);border-radius:10px;padding:10px 14px;width:min(90vw,520px);font-size:14px;line-height:1.6}
+.b{display:inline-block;min-width:30px;padding:2px 6px;margin:2px;border-radius:6px;background:#26324a;text-align:center;direction:ltr}
+.b.on{background:var(--ok);color:#000;font-weight:700}
+.mut{color:var(--mut)}
+code{direction:ltr;unicode-bidi:embed}
+</style>
+</head>
+<body>
+<h1>🎮 בדיקת שלט</h1>
+<div id="status">מחפש שלט… חבר אותו, לחץ פעם אחת עם העכבר על הדף, ואז לחץ על כפתור בשלט</div>
+<div id="field"><div id="dot"></div></div>
+<div class="card" id="pad"></div>
+<div class="card mut" id="env"></div>
+<script>
+const st=document.getElementById('status'),dot=document.getElementById('dot'),padEl=document.getElementById('pad'),envEl=document.getElementById('env');
+let x=.5,y=.5,last=performance.now(),events=[];
+const env=[];
+env.push('Gamepad API: '+(navigator.getGamepads?'נתמך ✓':'לא נתמך ✗'));
+env.push('דף מאובטח (https/קובץ): '+(window.isSecureContext?'כן ✓':'לא ✗'));
+env.push('בתוך מסגרת (iframe): '+(window.top!==window?'כן ✗ – פתח את הקובץ ישירות':'לא ✓'));
+env.push('דפדפן: <code>'+navigator.userAgent.replace(/</g,'&lt;')+'</code>');
+addEventListener('gamepadconnected',e=>{events.push('התחבר: '+e.gamepad.id)});
+addEventListener('gamepaddisconnected',e=>{events.push('התנתק: '+e.gamepad.id)});
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  let pads=[];
+  try{pads=[...navigator.getGamepads()].filter(Boolean)}catch(e){st.textContent='הדפדפן חוסם שלטים כאן ('+e.name+')';st.style.color='var(--bad)';return}
+  envEl.innerHTML=env.join('<br>')+(events.length?'<br>אירועים: '+events.slice(-4).join(' · '):'');
+  if(!pads.length){st.textContent='לא נמצא שלט – לחץ על כפתור בשלט (הדף צריך להיות בפוקוס)';st.style.color='var(--bad)';padEl.innerHTML='<span class="mut">אין נתונים</span>';return}
+  // pick the pad that is being used, otherwise the first
+  const active=p=>p.buttons.some(b=>b.pressed||b.value>.5)||p.axes.some(a=>Math.abs(a)>.3);
+  const p=pads.find(active)||pads[0];
+  let ax=p.axes[0]||0,ay=p.axes[1]||0;
+  if(Math.hypot(ax,ay)<.15)ax=ay=0;
+  const pr=i=>p.buttons[i]&&(p.buttons[i].pressed||p.buttons[i].value>.5);
+  if(p.mapping==='standard'){if(pr(14))ax=-1;if(pr(15))ax=1;if(pr(12))ay=-1;if(pr(13))ay=1}
+  x=Math.min(1,Math.max(0,x+ax*dt*.8));y=Math.min(1,Math.max(0,y+ay*dt*.8));
+  dot.style.left=(x*100)+'%';dot.style.top=(y*100)+'%';
+  const anyBtn=p.buttons.some(b=>b.pressed);
+  dot.style.background=anyBtn?'#ffd400':'#fff';
+  st.textContent='✓ השלט עובד! הזז את הסטיק השמאלי';st.style.color='var(--ok)';
+  padEl.innerHTML=pads.map(g=>`<div><b>#${g.index}</b> <code>${g.id.replace(/</g,'&lt;')}</code><br>mapping: <code>${g.mapping||'(לא סטנדרטי)'}</code></div>`).join('<hr>')+
+    '<div style="margin-top:6px">כפתורים:</div><div dir="ltr">'+p.buttons.map((b,i)=>`<span class="b ${b.pressed||b.value>.5?'on':''}">${i}</span>`).join('')+'</div>'+
+    '<div style="margin-top:6px">צירים:</div><div dir="ltr">'+p.axes.map((a,i)=>`<span class="b ${Math.abs(a)>.3?'on':''}">${i}: ${a.toFixed(2)}</span>`).join('')+'</div>';
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
