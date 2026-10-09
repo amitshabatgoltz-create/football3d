@@ -49,7 +49,9 @@ input[type=range] { width:130px; }
 </div>
 
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 <script src="character.js"></script>
+<script src="models/player.glb.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
@@ -71,11 +73,25 @@ const gm = new BABYLON.StandardMaterial("gm", scene);
 gm.diffuseColor = new BABYLON.Color3(0.16, 0.45, 0.2); gm.specularColor = BABYLON.Color3.Black();
 grass.material = gm;
 
-const hero = FootballCharacter.create(scene, { name: "me" });
+const cartoon = FootballCharacter.create(scene, { name: "me" });
+let hero = cartoon;
 
 const shadows = new BABYLON.ShadowGenerator(1024, sun);
 shadows.useBlurExponentialShadowMap = true;
 hero.meshes.forEach(m => shadows.addShadowCaster(m));
+
+// the realistic model (models/player.glb) replaces the cartoon once loaded
+if (window.PLAYER_GLB) {
+  FootballCharacter.load(scene, window.PLAYER_GLB, { name: "meModel" }).then(m => {
+    cartoon.root.setEnabled(false);
+    m.meshes.forEach(x => shadows.addShadowCaster(x));
+    m.setSpeed(+speedEl.value);
+    hero = m;
+    document.getElementById('export').style.display = 'none';
+    nameEl.parentElement.style.display = numEl.parentElement.style.display = 'none';
+    document.querySelector('#cShirt2').parentElement.style.display = 'none';
+  }).catch(e => console.warn('model failed, showing cartoon', e));
+}
 grass.receiveShadows = true;
 
 const ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: 0.44, segments: 20 }, scene);

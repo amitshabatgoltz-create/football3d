@@ -81,6 +81,8 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
 <script src="https://cdn.babylonjs.com/cannon.js"></script>
+<script src="character.js"></script>
+<script src="models/player.glb.js"></script>
 <script>
 const canvas = document.getElementById('c');
 const engine = new BABYLON.Engine(canvas, true);
@@ -137,23 +139,32 @@ for(let i=0;i<5;i++){
   p.material=pm2; p.isPickable=false;
 }
 
-// Players
-function makePlayer(colorHex,name){
-  const root=new BABYLON.TransformNode(name,scene);
-  const cm=new BABYLON.StandardMaterial(name+"cm",scene);
-  cm.diffuseColor=BABYLON.Color3.FromHexString(colorHex);
-  const sm=new BABYLON.StandardMaterial(name+"sm",scene);
-  sm.diffuseColor=new BABYLON.Color3(0.94,0.76,0.58);
-  const body=BABYLON.MeshBuilder.CreateCapsule(name+"b",{height:1.6,radius:0.33,tessellation:8},scene);
-  body.position.set(0,0.95,0); body.material=cm; body.parent=root;
-  const head=BABYLON.MeshBuilder.CreateSphere(name+"h",{diameter:0.52,segments:8},scene);
-  head.position.set(0,1.9,0); head.material=sm; head.parent=root;
-  const dot=BABYLON.MeshBuilder.CreateSphere(name+"d",{diameter:0.2},scene);
-  dot.position.set(0,2.6,0); dot.material=cm; dot.parent=root;
-  return root;
+// Players — each player is a holder node the game moves; the animated
+// character inside it can be swapped (cartoon first, then the 3D scan model).
+const KITS=[
+  {shirt:"#3B82F6",socks:"#3B82F6",shorts:"#FFFFFF",number:10},
+  {shirt:"#EF4444",socks:"#EF4444",shorts:"#111111",shirt2:"#FFFFFF",number:7,
+   hairStyle:"short",hair:"#111111",skin:"#C68E6A"},
+];
+const heroes=[];
+function makePlayer(i){
+  const holder=new BABYLON.TransformNode("p"+(i+1),scene);
+  const h=FootballCharacter.create(scene,Object.assign({name:"p"+(i+1)+"c"},KITS[i]));
+  h.root.parent=holder; heroes[i]=h;
+  return holder;
 }
-const p1mesh=makePlayer("#3B82F6","p1");
-const p2mesh=makePlayer("#EF4444","p2");
+const p1mesh=makePlayer(0);
+const p2mesh=makePlayer(1);
+// Player 1 = the realistic rigged model (models/player.glb, made with tools/autorig.py)
+if(window.PLAYER_GLB){
+  FootballCharacter.load(scene,window.PLAYER_GLB,{name:"p1model",shirt:KITS[0].shirt,socks:KITS[0].socks,shorts:KITS[0].shorts})
+    .then(h=>{ heroes[0].dispose(); h.root.parent=p1mesh; heroes[0]=h; })
+    .catch(e=>console.warn("player model failed, keeping cartoon:",e));
+}
+scene.onBeforeRenderObservable.add(()=>{
+  const dt=engine.getDeltaTime()/1000;
+  heroes.forEach(h=>h&&h.update(dt));
+});
 
 // Game state
 let score=[0,0],timeLeft=120,matchRunning=false,processingGoal=false,timerInt=null;
@@ -223,6 +234,7 @@ scene.registerBeforeRender(()=>{
     p.position.z=Math.max(-33,Math.min(33,p.position.z+ay*SPEED*dt));
     p.position.y=0;
     if(Math.hypot(ax,ay)>0.1){ps.dx=ax;ps.dz=ay;}
+    heroes[i].setSpeed(Math.min(1,Math.hypot(ax,ay)));
     p.rotation.y=Math.atan2(ps.dx,ps.dz);
     if(ps.cd>0)ps.cd--;
     const bPressed=bDown&&!ps.bWas; ps.bWas=bDown;
@@ -230,6 +242,7 @@ scene.registerBeforeRender(()=>{
       if(ps.hasBall){
         ps.hasBall=false;
         ballMesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ps.dx*KICK,4,ps.dz*KICK));
+        heroes[i].play("kick");
         ps.cd=KCD;
       } else {
         const d=Math.hypot(ballMesh.position.x-p.position.x,ballMesh.position.z-p.position.z);
@@ -265,6 +278,8 @@ function goalScored(who){
   processingGoal=true;
   pSt[0].hasBall=false;pSt[1].hasBall=false;
   score[who]++;updateHUD();
+  heroes.forEach(h=>h.setSpeed(0));
+  heroes[who].play(Math.random()<0.5?"siu":"celebrate");
   showGoal(()=>{resetAll();processingGoal=false;});
 }
 

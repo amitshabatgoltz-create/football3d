@@ -389,23 +389,40 @@
     }
 
     // ---------- animation state ----------
-    const state = {
-      t: 0, speed: 0, speedS: 0, shot: null, shotT: 0, onDone: null,
-      blinkIn: 2 + Math.random() * 3,
-    };
-    const poseA = {}, poseB = {}, poseL = {}, poseS = {}, poseOut = {};
     const hipsBaseY = hips.position.y;
-
-    function apply(p) {
+    const anim = makeAnimator((p) => {
       for (const j of JOINTS) {
         const n = J[j]; if (!n) continue;
         n.rotation.set(p[j][0], p[j][1], p[j][2]);
       }
       hips.position.set(p.pos[0], hipsBaseY + p.pos[1], p.pos[2]);
-    }
+    });
+    let blinkIn = 2 + Math.random() * 3;
 
-    const api = {
+    const api = Object.assign(anim, {
       root, joints: J, meshes, materials: M, hipsBaseY,
+      setNumber(num, name) { drawBack(num, name === undefined ? opts.playerName : name); opts.number = num; if (name !== undefined) opts.playerName = name; },
+      setColor(part, hex) { if (M[part]) M[part].diffuseColor = C(hex); if (part === "shirt2") { opts.shirt2 = hex; drawBack(opts.number, opts.playerName); } },
+      update(dt) {
+        anim.step(dt);
+        // blink
+        blinkIn -= dt;
+        const closed = blinkIn < 0 && blinkIn > -0.12;
+        for (const e of eyes) e.scaling.y = closed ? 0.12 : 1;
+        if (blinkIn <= -0.12) blinkIn = 2 + Math.random() * 4;
+      },
+      dispose() { root.dispose(false, true); tex.dispose(); },
+    });
+    api.update(0);
+    return api;
+  }
+
+  // ---------- Animation driver (shared by every character type) ----------
+  // applyPose(pose) writes a pose ({joint: [x,y,z], pos: [x,y,z]}) onto a model.
+  function makeAnimator(applyPose) {
+    const state = { t: 0, runT: 0, speed: 0, speedS: 0, loco: "run", shot: null, shotT: 0, onDone: null };
+    const poseA = {}, poseB = {}, poseL = {}, poseS = {}, poseOut = {};
+    return {
       setSpeed(v) { state.speed = Math.max(0, Math.min(1, v)); },
       play(name, onDone) {
         const a = ANIMATIONS[name];
@@ -414,18 +431,16 @@
         state.shot = a; state.shotT = 0; state.onDone = onDone || null;
       },
       isPlaying() { return !!state.shot; },
-      setNumber(num, name) { drawBack(num, name === undefined ? opts.playerName : name); opts.number = num; if (name !== undefined) opts.playerName = name; },
-      setColor(part, hex) { if (M[part]) M[part].diffuseColor = C(hex); if (part === "shirt2") { opts.shirt2 = hex; drawBack(opts.number, opts.playerName); } },
-      update(dt) {
+      step(dt) {
         dt = Math.min(dt, 0.1);
         state.t += dt;
         state.speedS += (state.speed - state.speedS) * Math.min(1, dt * 10);
         // locomotion: idle <-> run (or a custom loop chosen via play())
         sample(ANIMATIONS.idle, state.t, poseA);
-        if (state.loco && state.loco !== "idle" && state.loco !== "run") {
+        if (state.loco !== "idle" && state.loco !== "run") {
           sample(ANIMATIONS[state.loco], state.t, poseL);
         } else {
-          state.runT = (state.runT || 0) + dt * (0.75 + 0.35 * state.speedS);
+          state.runT += dt * (0.75 + 0.35 * state.speedS);
           sample(ANIMATIONS.run, state.runT, poseB);
           mix(poseA, poseB, Math.min(1, state.speedS * 1.4), poseL);
         }
@@ -445,16 +460,61 @@
             if (cb) cb();
           }
         }
-        apply(out);
-        // blink
-        state.blinkIn -= dt;
-        const closed = state.blinkIn < 0 && state.blinkIn > -0.12;
-        for (const e of eyes) e.scaling.y = closed ? 0.12 : 1;
-        if (state.blinkIn <= -0.12) state.blinkIn = 2 + Math.random() * 4;
+        applyPose(out);
       },
-      dispose() { root.dispose(false, true); tex.dispose(); },
     };
-    state.loco = "run";
+  }
+
+  // ---------- Rigged .glb model (made with tools/autorig.py) ----------
+  // const hero = await FootballCharacter.load(scene, "models/player.glb", { shirt: "#3B82F6" });
+  // Same API as create(): root, setSpeed, play, update, setColor.
+  async function load(scene, url, opts) {
+    const BJ = B();
+    opts = Object.assign({ name: "player" }, opts || {});
+    // url can be a path ("models/player.glb") or a data: URL (models/player.glb.js),
+    // which also works when the page is opened straight from disk (file://)
+    const isData = url.startsWith("data:");
+    const slash = isData ? 0 : url.lastIndexOf("/") + 1;
+    const res = await BJ.SceneLoader.ImportMeshAsync("", url.slice(0, slash), url.slice(slash), scene, null, ".glb");
+    const root = new BJ.TransformNode(opts.name, scene);
+    res.meshes[0].parent = root;
+    const J = {};
+    for (const n of res.transformNodes) if (JOINTS.includes(n.name) || n.name === "hips") J[n.name] = n;
+    const hips = J.hips;
+    const hipsRest = hips.position.clone();
+    // glTF is right-handed; Babylon mirrors the model on x when loading, so
+    // sideways (y/z) rotations and x offsets flip sign to keep the same poses.
+    const q = new BJ.Quaternion();
+    const anim = makeAnimator((p) => {
+      for (const j of JOINTS) {
+        const n = J[j]; if (!n) continue;
+        const r = p[j];
+        BJ.Quaternion.FromEulerAnglesToRef(r[0], -r[1], -r[2], q);
+        n.rotationQuaternion = n.rotationQuaternion || new BJ.Quaternion();
+        n.rotationQuaternion.copyFrom(q);
+      }
+      hips.position.set(hipsRest.x - p.pos[0], hipsRest.y + p.pos[1], hipsRest.z + p.pos[2]);
+    });
+    const meshes = res.meshes.filter(m => m.getTotalVertices() > 0);
+    const materials = {};
+    for (const m of meshes) {
+      m.alwaysSelectAsActiveMesh = true;   // skinned: bounds move with the pose
+      m.isPickable = false;
+      const mats = m.material && m.material.subMaterials ? m.material.subMaterials : [m.material];
+      for (const mt of mats) if (mt) materials[mt.name] = mt;
+    }
+    const api = Object.assign(anim, {
+      root, joints: J, meshes, materials,
+      setColor(part, hex) {
+        const mt = materials[part]; if (!mt) return;
+        const c = BJ.Color3.FromHexString(hex).toLinearSpace();
+        if (mt.albedoColor) mt.albedoColor = c; else mt.diffuseColor = c;
+      },
+      setNumber() {},
+      update(dt) { anim.step(dt); },
+      dispose() { root.dispose(false, true); },
+    });
+    for (const part of ["shirt", "shorts", "socks", "boots", "skin", "hair"]) if (opts[part]) api.setColor(part, opts[part]);
     api.update(0);
     return api;
   }
@@ -509,5 +569,5 @@
     }
   }
 
-  global.FootballCharacter = { create, exportGLB, ANIMATIONS, JOINTS, sample };
+  global.FootballCharacter = { create, load, exportGLB, ANIMATIONS, JOINTS, sample };
 })(typeof window !== "undefined" ? window : globalThis);
