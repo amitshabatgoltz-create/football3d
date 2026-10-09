@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player Studio</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#0d1424; font-family:system-ui,sans-serif; color:#fff; }
+#c { width:100%; height:100%; display:block; touch-action:none; }
+#panel {
+  position:fixed; top:12px; right:12px; width:250px; max-height:calc(100% - 24px); overflow:auto;
+  background:rgba(10,16,30,0.82); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:14px;
+}
+h1 { font-size:18px; margin-bottom:10px; }
+h2 { font-size:12px; color:rgba(255,255,255,0.55); margin:14px 0 6px; letter-spacing:1px; }
+#anims { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+button {
+  padding:8px 6px; border:none; border-radius:8px; background:#fff; color:#111;
+  font-size:14px; font-weight:600; cursor:pointer;
+}
+button:hover { background:#dde4f0; }
+button.wide { width:100%; margin-top:8px; background:#22c55e; color:#fff; }
+label { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin:5px 0; gap:8px; }
+input[type=text], input[type=number] { width:110px; padding:4px 6px; border-radius:6px; border:none; }
+input[type=color] { width:40px; height:26px; border:none; background:none; }
+input[type=range] { width:130px; }
+#hint { font-size:11px; color:rgba(255,255,255,0.45); margin-top:10px; line-height:1.5; }
+@media (max-width:600px){ #panel{ top:auto; bottom:8px; right:8px; left:8px; width:auto; max-height:45%; } }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+  <h1>⚽ הדמות שלי</h1>
+  <h2>אנימציות</h2>
+  <div id="anims"></div>
+  <label>מהירות ריצה <input type="range" id="speed" min="0" max="1" step="0.01" value="0"></label>
+  <h2>חולצה</h2>
+  <label>שם <input type="text" id="pname" maxlength="12" placeholder="השם שלך"></label>
+  <label>מספר <input type="number" id="pnum" min="0" max="99" value="10"></label>
+  <label>חולצה <input type="color" id="cShirt" value="#3B82F6"></label>
+  <label>פסים ומספר <input type="color" id="cShirt2" value="#FFFFFF"></label>
+  <label>מכנסיים <input type="color" id="cShorts" value="#FFFFFF"></label>
+  <label>גרביים <input type="color" id="cSocks" value="#3B82F6"></label>
+  <label>נעליים <input type="color" id="cBoots" value="#111111"></label>
+  <button class="wide" id="export">⬇ הורד כ-GLB (Blender / משחקים)</button>
+  <div id="hint">גרור לסיבוב · גלגלת לזום<br>אנימציה חדשה מוסיפים ב-character.js בתוך ANIMATIONS</div>
+</div>
+
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="character.js"></script>
+<script>
+const canvas = document.getElementById('c');
+const engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+const scene = new BABYLON.Scene(engine);
+scene.clearColor = new BABYLON.Color4(0.05, 0.08, 0.14, 1);
+
+const cam = new BABYLON.ArcRotateCamera("cam", Math.PI / 2 + 0.5, Math.PI / 2.4, 4.2, new BABYLON.Vector3(0, 1.1, 0), scene);
+cam.lowerRadiusLimit = 1.2; cam.upperRadiusLimit = 12; cam.wheelPrecision = 60; cam.minZ = 0.05;
+cam.attachControl(canvas, true);
+
+const hemi = new BABYLON.HemisphericLight("h", new BABYLON.Vector3(0.2, 1, 0.3), scene);
+hemi.intensity = 0.75; hemi.groundColor = new BABYLON.Color3(0.25, 0.3, 0.25);
+const sun = new BABYLON.DirectionalLight("sun", new BABYLON.Vector3(-0.4, -1, 0.6), scene);
+sun.position = new BABYLON.Vector3(4, 8, -6); sun.intensity = 0.8;
+
+const grass = BABYLON.MeshBuilder.CreateDisc("grass", { radius: 4, tessellation: 64 }, scene);
+grass.rotation.x = Math.PI / 2;
+const gm = new BABYLON.StandardMaterial("gm", scene);
+gm.diffuseColor = new BABYLON.Color3(0.16, 0.45, 0.2); gm.specularColor = BABYLON.Color3.Black();
+grass.material = gm;
+
+const hero = FootballCharacter.create(scene, { name: "me" });
+
+const shadows = new BABYLON.ShadowGenerator(1024, sun);
+shadows.useBlurExponentialShadowMap = true;
+hero.meshes.forEach(m => shadows.addShadowCaster(m));
+grass.receiveShadows = true;
+
+const ball = BABYLON.MeshBuilder.CreateSphere("ball", { diameter: 0.44, segments: 20 }, scene);
+const bm = new BABYLON.StandardMaterial("bm", scene); bm.diffuseColor = new BABYLON.Color3(0.95, 0.95, 0.92);
+ball.material = bm; ball.position.set(0.25, 0.22, 0.7);
+shadows.addShadowCaster(ball);
+
+// animation buttons (built from the registry, so new animations show up automatically)
+const animsEl = document.getElementById('anims');
+for (const [name, a] of Object.entries(FootballCharacter.ANIMATIONS)) {
+  if (a.loop) continue;
+  const b = document.createElement('button');
+  b.textContent = a.label || name;
+  b.onclick = () => hero.play(name);
+  animsEl.appendChild(b);
+}
+const speedEl = document.getElementById('speed');
+speedEl.oninput = () => hero.setSpeed(+speedEl.value);
+hero.setSpeed(0);
+
+const nameEl = document.getElementById('pname'), numEl = document.getElementById('pnum');
+const redraw = () => hero.setNumber(numEl.value || 0, nameEl.value);
+nameEl.oninput = redraw; numEl.oninput = redraw;
+[['cShirt','shirt'],['cShirt2','shirt2'],['cShorts','shorts'],['cSocks','socks'],['cBoots','boots']].forEach(([id, part]) => {
+  const el = document.getElementById(id);
+  el.oninput = () => hero.setColor(part, el.value);
+});
+
+document.getElementById('export').onclick = async () => {
+  const btn = document.getElementById('export');
+  btn.disabled = true; btn.textContent = 'מכין קובץ...';
+  try {
+    if (!BABYLON.GLTF2Export) {
+      await new Promise((ok, fail) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js';
+        s.onload = ok; s.onerror = fail; document.head.appendChild(s);
+      });
+    }
+    await FootballCharacter.exportGLB(scene, hero, 'my_football_player');
+  } catch (e) { alert('הייצוא נכשל: ' + e.message); console.error(e); }
+  btn.disabled = false; btn.textContent = '⬇ הורד כ-GLB (Blender / משחקים)';
+};
+
+scene.onBeforeRenderObservable.add(() => {
+  const dt = engine.getDeltaTime() / 1000;
+  hero.update(dt);
+});
+
+engine.runRenderLoop(() => scene.render());
+window.addEventListener('resize', () => engine.resize());
+</script>
+</body>
+</html>
