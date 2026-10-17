@@ -2,54 +2,243 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1920, height=1080" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/vendor/gsap.min.js"></script>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      @font-face { font-family: "Saira Condensed"; font-weight: 700; src: url("assets/fonts/font-S7.woff2") format("woff2"); }
+      @font-face { font-family: "Saira Condensed"; font-weight: 800; src: url("assets/fonts/font-S8.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 500; src: url("assets/fonts/font-B5.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 700; src: url("assets/fonts/font-B7.woff2") format("woff2"); }
+      :root {
+        --ink: #060a13;
+        --white: #eaf1ff;
+        --lime: #b8ff3b;
+        --cyan: #38d6ff;
+        --blue: #1a5fe8;
+        --gold: #f5b83d;
+        --mut: #9fb0cc;
       }
-      html,
-      body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
-        background: #0a0a0a;
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; overflow: hidden; background: var(--ink); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--ink); font-family: "Barlow", sans-serif; color: var(--white); }
+      .layer { position: absolute; inset: 0; }
+      #stage { position: absolute; inset: -40px; }
+      .shot { position: absolute; inset: 40px; width: 1080px; height: 1920px; object-fit: cover; }
+      .blurbg { filter: blur(26px) brightness(0.55) saturate(1.2); }
+      #grade { background-color: rgba(6, 10, 19, 0.6); }
+      #vignette { background: radial-gradient(ellipse 85% 65% at 50% 50%, rgba(6, 10, 19, 0) 45%, rgba(6, 10, 19, 0.85) 100%); }
+      #hudmask { bottom: auto; height: 130px; background: linear-gradient(to bottom, rgba(6, 10, 19, 0.9) 40%, rgba(6, 10, 19, 0)); }
+      #flash { background: #ffffff; opacity: 0; }
+      .H { font-family: "Saira Condensed", sans-serif; font-weight: 800; text-transform: uppercase; font-style: italic; line-height: 0.86; letter-spacing: 0.01em; }
+      .K { font-family: "Saira Condensed", sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.32em; font-size: 34px; }
+      .center { display: flex; align-items: center; justify-content: center; text-align: center; }
+      .lime { color: var(--lime); }
+      .cyan { color: var(--cyan); }
+      .shadow { text-shadow: 0 10px 50px rgba(6, 10, 19, 0.75); }
+      .tease, .lbl, .menu, .feat { opacity: 0; }
+
+      /* F1 */
+      #f1k { position: absolute; left: 0; right: 0; top: 300px; text-align: center; color: var(--cyan); }
+      .tease .w { font-size: 250px; }
+
+      /* F2 / F7 key art */
+      .keyart { position: absolute; left: 0; top: 560px; width: 1080px; height: 720px; object-fit: cover; }
+
+      /* F3 labels */
+      .lbl { position: absolute; left: 70px; right: 70px; bottom: 300px; }
+      .lbl .k { display: flex; align-items: center; gap: 20px; margin-bottom: 14px; color: var(--white); }
+      .lbl .k i { display: block; width: 44px; height: 6px; background: var(--lime); transform: skewX(-20deg); }
+      .lbl .w { font-size: 230px; }
+
+      /* F4/F5 */
+      #f4t { position: absolute; left: 0; right: 0; top: 230px; }
+      #f4t .w { font-size: 150px; }
+      #goal { font-size: 380px; color: var(--lime); -webkit-text-stroke: 6px var(--ink); text-shadow: 14px 14px 0 var(--blue), 0 20px 80px rgba(6, 10, 19, 0.8); }
+      #f5 { align-items: flex-start; padding-top: 250px; }
+
+      /* F6 menus */
+      .menu { position: absolute; left: 60px; right: 60px; top: 760px; }
+      .menu .card { display: block; width: 960px; height: 540px; border-radius: 22px; overflow: hidden; border: 3px solid rgba(56, 214, 255, 0.7); box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), 0 0 60px rgba(56, 214, 255, 0.25); }
+      .menu .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .feat { position: absolute; left: 70px; right: 70px; top: 330px; }
+      .feat .k { color: var(--cyan); margin-bottom: 18px; }
+      .feat .w { font-size: 128px; }
+      .feat .s { font-family: "Saira Condensed", sans-serif; font-weight: 700; font-size: 44px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mut); margin-top: 26px; }
+
+      /* F7 */
+      #f7 { flex-direction: column; }
+      #e-tag { position: absolute; left: 0; right: 0; top: 1330px; text-align: center; }
+      #e-tag .K { font-size: 40px; }
+      .playbtn {
+        position: absolute; left: 190px; top: 1440px; width: 700px; height: 150px; border-radius: 18px;
+        background: var(--blue); color: #ffffff; display: flex; align-items: center; justify-content: center; gap: 28px;
+        box-shadow: 0 0 0 4px var(--cyan), 0 24px 80px rgba(26, 95, 232, 0.6);
       }
-      #root {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-      }
-      #title {
-        color: #f4f4f5;
-        font-size: 72px;
-        font-weight: 600;
-        letter-spacing: -0.03em;
-      }
+      .playbtn .H { font-size: 110px; }
+      .playbtn svg { width: 70px; height: 70px; }
+      #e-foot { position: absolute; left: 0; right: 0; bottom: 170px; text-align: center; color: var(--mut); }
+      #e-foot .K { font-size: 28px; }
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="10"
-      data-width="1920"
-      data-height="1080"
-    >
-      <h1 id="title" class="clip" data-start="0" data-duration="10" data-track-index="0">Title</h1>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="60" data-width="1080" data-height="1920">
+      <div id="stage">
+      <img id="v-tunnel" class="clip shot " src="assets/img/loading.webp" alt="" data-start="0" data-duration="4" data-track-index="0" />
+      <video id="v01" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="4" data-duration="4" data-media-start="3.400" data-track-index="0"></video>
+      <img id="bg-hero" class="clip shot blurbg" src="assets/img/hero.webp" alt="" data-start="8" data-duration="2" data-track-index="0" />
+      <video id="v03" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="10" data-duration="2" data-media-start="5.300" data-track-index="0"></video>
+      <video id="v04" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="12" data-duration="2" data-media-start="11.000" data-track-index="0"></video>
+      <video id="v05" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="14" data-duration="2" data-media-start="32.500" data-track-index="0"></video>
+      <video id="v06" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="16" data-duration="2" data-media-start="39.300" data-track-index="0"></video>
+      <video id="v07" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="18" data-duration="2" data-media-start="44.000" data-track-index="0"></video>
+      <video id="v08" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="20" data-duration="2" data-media-start="18.700" data-track-index="0"></video>
+      <video id="v09" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="22" data-duration="2" data-media-start="25.000" data-track-index="0"></video>
+      <video id="v10" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="24" data-duration="2" data-media-start="50.000" data-track-index="0"></video>
+      <video id="v11" class="clip shot " src="assets/clips/match.mp4" muted playsinline data-start="26" data-duration="14" data-media-start="70.133" data-track-index="0"></video>
+      <video id="v12" class="clip shot blurbg" src="assets/clips/match.mp4" muted playsinline data-start="40" data-duration="12" data-media-start="63.800" data-track-index="0"></video>
+      <img id="bg-end" class="clip shot blurbg" src="assets/img/hero.webp" alt="" data-start="52" data-duration="8" data-track-index="0" />
+      </div>
+
+      <div id="grade" class="clip layer" data-start="0" data-duration="60" data-track-index="1"></div>
+      <div id="vignette" class="clip layer" data-start="0" data-duration="60" data-track-index="2"></div>
+      <div id="hudmask" class="clip layer" data-start="0" data-duration="40" data-track-index="2"></div>
+
+      <div id="f1" class="clip layer" data-start="0" data-duration="8" data-track-index="3">
+        <div id="f1k" class="K">season 01 · the rise</div>
+        <div id="t1" class="tease layer center"><div class="w H shadow">compete.</div></div>
+        <div id="t2" class="tease layer center"><div class="w H shadow">score.</div></div>
+        <div id="t3" class="tease layer center"><div class="w H shadow lime">dominate.</div></div>
+        <div id="t4" class="tease layer center"><div class="w H shadow">7 v 7</div></div>
+      </div>
+
+      <div id="f2" class="clip layer" data-start="8" data-duration="2" data-track-index="3">
+        <img id="f2art" class="keyart" src="assets/img/hero.webp" alt="" />
+      </div>
+
+      <div id="f3" class="clip layer" data-start="10" data-duration="16" data-track-index="3">
+        <div id="l1" class="lbl"><div class="k K"><i></i>01 / 04</div><div class="w H shadow">dribble.</div></div>
+        <div id="l2" class="lbl"><div class="k K"><i></i>02 / 04</div><div class="w H shadow">tackle.</div></div>
+        <div id="l3" class="lbl"><div class="k K"><i></i>03 / 04</div><div class="w H shadow">shoot.</div></div>
+        <div id="l4" class="lbl"><div class="k K"><i></i>04 / 04</div><div class="w H shadow lime">score.</div></div>
+      </div>
+
+      <div id="f4" class="clip layer" data-start="26" data-duration="8" data-track-index="3">
+        <div id="f4t" class="center"><div id="f4w" class="w H shadow">last attack.</div></div>
+      </div>
+
+      <div id="f5" class="clip layer center" data-start="34" data-duration="6" data-track-index="3">
+        <div id="goal" class="H">goal!</div>
+      </div>
+
+      <div id="f6" class="clip layer" data-start="40" data-duration="12" data-track-index="3">
+        <div id="ft1" class="feat"><div class="k K">your player</div><div class="w H shadow">build your <span class="lime">legend.</span></div></div>
+        <div id="mc1" class="menu"><div class="card"><img src="assets/menus/m2-home.jpg" alt="" /></div></div>
+        <div id="ft2" class="feat"><div class="k K">the store</div><div class="w H shadow">gear <span class="lime">up.</span></div><div class="s">kits · boots · gloves · celebrations</div></div>
+        <div id="mc2" class="menu"><div class="card"><img src="assets/menus/m4-shop.jpg" alt="" /></div></div>
+        <div id="ft3" class="feat"><div class="k K">battle pass</div><div class="w H shadow">climb the <span class="lime">season.</span></div><div class="s">season 01 · the rise</div></div>
+        <div id="mc3" class="menu"><div class="card"><img src="assets/menus/m5-bp.jpg" alt="" /></div></div>
+        <div id="ft4" class="feat"><div class="k K">four ways to play</div><div class="w H shadow">pick your <span class="lime">fight.</span></div><div class="s">quick match · ranked · tournaments · online</div></div>
+        <div id="mc4" class="menu"><div class="card"><img src="assets/menus/m3-modes.jpg" alt="" /></div></div>
+      </div>
+
+      <div id="f7" class="clip layer" data-start="52" data-duration="8" data-track-index="3">
+        <img id="e-art" class="keyart" src="assets/img/hero.webp" alt="" />
+        <div id="e-tag"><div class="K">compete. <span class="cyan">score.</span> dominate.</div></div>
+        <div id="e-btn" class="playbtn"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#ffffff" /></svg><div class="H">play</div></div>
+        <div id="e-foot"><div class="K">7v7 · 3d football · in your browser</div></div>
+      </div>
+
+      <div id="flash" class="clip layer" data-start="0" data-duration="60" data-track-index="5"></div>
+      <audio id="music" src="assets/music.mp3" data-start="0" data-duration="60" data-track-index="6" data-volume="1"></audio>
     </div>
     <script>
       const tl = gsap.timeline({ paused: true });
-      // Example: tl.fromTo("#title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0);
+      const B = 0.5;
+      gsap.set("#stage", { x: 0, y: 0 });
+
+      // veil over the footage, per section
+      const veil = (a) => "rgba(6, 10, 19, " + a + ")";
+      tl.fromTo("#grade", { backgroundColor: veil(0.6) }, { backgroundColor: veil(0.4), duration: 8, ease: "none" }, 0);
+      tl.set("#grade", { backgroundColor: veil(0) }, 8);
+      tl.set("#grade", { backgroundColor: veil(0.05) }, 10);
+      tl.set("#grade", { backgroundColor: veil(0.15) }, 26);
+      tl.set("#grade", { backgroundColor: veil(0) }, 34);
+      tl.set("#grade", { backgroundColor: veil(0.25) }, 40);
+      tl.set("#grade", { backgroundColor: veil(0.35) }, 52);
+
+      function impact(t, s) {
+        tl.fromTo("#flash", { opacity: 0.9 * s }, { opacity: 0, duration: 0.35, ease: "power2.out", immediateRender: false }, t);
+        tl.fromTo("#stage", { x: 0, y: 0 }, { immediateRender: false, keyframes: [
+          { x: -26 * s, y: 18 * s, duration: 0.04 }, { x: 22 * s, y: -14 * s, duration: 0.05 },
+          { x: -12 * s, y: 8 * s, duration: 0.06 }, { x: 0, y: 0, duration: 0.12 }], ease: "none" }, t);
+      }
+      impact(8, 1); impact(34, 1); impact(52, 0.8);
+      for (let k = 1; k < 8; k++) tl.fromTo("#flash", { opacity: 0.16 }, { opacity: 0, duration: 0.18, immediateRender: false }, 10 + 2 * k);
+      for (let k = 1; k < 4; k++) tl.fromTo("#flash", { opacity: 0.2 }, { opacity: 0, duration: 0.2, immediateRender: false }, 40 + 3 * k);
+
+      // F1 — the game's tagline, one word per bar
+      tl.fromTo("#f1k", { opacity: 0, scale: 1.15 }, { opacity: 1, scale: 1, duration: 1.2, ease: "power2.out" }, 0.2);
+      tl.to("#f1k", { opacity: 0, duration: 0.3 }, 7.6);
+      ["#t1", "#t2", "#t3", "#t4"].forEach((id, i) => {
+        const t = i * 2;
+        tl.fromTo(id, { opacity: 0 }, { opacity: 1, duration: 0.05 }, t);
+        tl.fromTo(id + " .w", { scale: 1.5, skewX: -14, filter: "blur(16px)" }, { scale: 1, skewX: 0, filter: "blur(0px)", duration: 0.3, ease: "expo.out" }, t);
+        tl.to(id + " .w", { scale: 0.93, duration: 1.5, ease: "none" }, t + 0.3);
+        tl.to(id, { opacity: 0, duration: 0.12 }, t + 1.86);
+      });
+      tl.fromTo("#v-tunnel", { scale: 1 }, { scale: 1.18, duration: 4, ease: "none" }, 0);
+
+      // F2 — key art slam
+      tl.fromTo("#f2art", { scale: 1.9, opacity: 0, rotation: -4 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.28, ease: "back.out(1.6)" }, 8);
+      tl.to("#f2art", { scale: 1.07, duration: 1.6, ease: "none" }, 8.3);
+      tl.to("#f2art", { x: 1200, skewX: -20, duration: 0.22, ease: "power3.in" }, 9.78);
+      tl.fromTo("#bg-hero", { scale: 1.2 }, { scale: 1.05, duration: 2, ease: "none" }, 8);
+
+      // F3 — labels every two bars
+      ["#l1", "#l2", "#l3", "#l4"].forEach((id, i) => {
+        const t = 10 + i * 4;
+        tl.set(id, { opacity: 1 }, t);
+        tl.fromTo(id + " .k", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo(id + " .w", { xPercent: -30, opacity: 0, skewX: -18 }, { xPercent: 0, opacity: 1, skewX: 0, duration: 0.35, ease: "power4.out" }, t + 0.05);
+        tl.to(id + " .w", { x: 26, duration: 3.4, ease: "none" }, t + 0.4);
+        tl.to(id, { opacity: 0, duration: 0.15 }, t + 3.85);
+      });
+
+      // F4 — build-up
+      tl.fromTo("#f4w", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 26.1);
+      tl.to("#f4w", { scale: 1.08, duration: 5, ease: "power1.in" }, 26.5);
+      tl.to("#f4w", { opacity: 0, duration: 0.3 }, 31.5);
+
+      // F5 — GOAL
+      tl.fromTo("#goal", { scale: 3.2, opacity: 0, rotation: -12 }, { scale: 1, opacity: 1, rotation: -6, duration: 0.3, ease: "back.out(1.8)" }, 34);
+      tl.to("#goal", { scale: 1.1, duration: 2.2, ease: "none" }, 34.3);
+      tl.to("#goal", { opacity: 0, y: -120, duration: 0.3, ease: "power2.in" }, 36.6);
+
+      // F6 — menu tour, three seconds a screen
+      [1, 2, 3, 4].forEach(i => {
+        const t = 40 + (i - 1) * 3, side = i % 2 ? 1 : -1;
+        tl.set(["#ft" + i, "#mc" + i], { opacity: 1 }, t);
+        tl.fromTo("#ft" + i + " .k", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo("#ft" + i + " .w", { opacity: 0, xPercent: -20, skewX: -16 }, { opacity: 1, xPercent: 0, skewX: 0, duration: 0.35, ease: "power4.out" }, t + 0.05);
+        if (i > 1) tl.fromTo("#ft" + i + " .s", { opacity: 0 }, { opacity: 1, duration: 0.4 }, t + 0.35);
+        tl.fromTo("#mc" + i + " .card", { xPercent: 110 * side, rotationY: -28 * side, rotationZ: 3 * side, transformPerspective: 1600 },
+          { xPercent: 0, rotationY: -8 * side, rotationZ: 0, duration: 0.45, ease: "power4.out" }, t);
+        tl.to("#mc" + i + " .card", { rotationY: 6 * side, scale: 1.05, duration: 2.4, ease: "none" }, t + 0.45);
+        tl.to("#mc" + i + " .card", { xPercent: -110 * side, duration: 0.2, ease: "power3.in" }, t + 2.82);
+        tl.to("#ft" + i, { opacity: 0, duration: 0.15 }, t + 2.85);
+      });
+
+      // F7 — end card
+      tl.fromTo("#e-art", { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(1.5)" }, 52);
+      tl.to("#e-art", { scale: 1.05, duration: 7.7, ease: "none" }, 52.3);
+      tl.fromTo("#e-tag", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 53.2);
+      tl.fromTo("#e-btn", { opacity: 0, scale: 0.6, skewX: -6 }, { opacity: 1, scale: 1, skewX: -6, duration: 0.4, ease: "back.out(2.2)" }, 54);
+      for (let t = 55.5; t < 59.5; t += 1) tl.fromTo("#e-btn", { scale: 1.06 }, { scale: 1, duration: 0.45, ease: "power2.out", immediateRender: false }, t);
+      tl.fromTo("#e-foot", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 55);
+      tl.to("#f7", { opacity: 0, duration: 1.2, ease: "power1.in" }, 58.8);
+      tl.fromTo("#bg-end", { scale: 1.25 }, { scale: 1.1, duration: 8, ease: "none" }, 52);
+
       window.__timelines["main"] = tl;
-      tl.seek(0);
     </script>
   </body>
 </html>
