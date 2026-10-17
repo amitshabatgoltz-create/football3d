@@ -2,54 +2,290 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1920, height=1080" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/vendor/gsap.min.js"></script>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      @font-face { font-family: "Barlow"; font-weight: 400; src: url("assets/fonts/barlow-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 600; src: url("assets/fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 800; src: url("assets/fonts/barlow-latin-800-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 900; src: url("assets/fonts/barlow-latin-900-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow"; font-weight: 900; font-style: italic; src: url("assets/fonts/barlow-latin-900-italic.woff2") format("woff2"); }
+      @font-face { font-family: "IBM Plex Mono"; font-weight: 500; src: url("assets/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }
+      :root {
+        --ink: #0d1424;
+        --white: #ffffff;
+        --blue: #3b82f6;
+        --red: #ef4444;
+        --hint: #484b50;
       }
-      html,
-      body {
-        margin: 0;
-        width: 1920px;
-        height: 1080px;
-        overflow: hidden;
-        background: #0a0a0a;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; overflow: hidden; background: var(--ink); }
       #root {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        position: relative; width: 100%; height: 100%; overflow: hidden;
+        background: var(--ink); font-family: "Barlow", sans-serif; color: var(--white);
       }
-      #title {
-        color: #f4f4f5;
-        font-size: 72px;
-        font-weight: 600;
-        letter-spacing: -0.03em;
+      .layer { position: absolute; inset: 0; }
+      #stage { position: absolute; inset: -40px; }
+      .shot { position: absolute; inset: 40px; width: 1080px; height: 1920px; object-fit: cover; }
+      #grade { background-color: rgba(13, 20, 36, 0.72); }
+      #vignette { background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(13, 20, 36, 0) 40%, rgba(13, 20, 36, 0.85) 100%); }
+      #hudmask { bottom: auto; height: 150px; background: linear-gradient(to bottom, var(--ink) 55%, rgba(13, 20, 36, 0)); }
+      #flash { background: var(--white); opacity: 0; }
+      .tease, .lbl, .card, .clk { opacity: 0; }
+      .mono {
+        font-family: "IBM Plex Mono", monospace; font-weight: 500; text-transform: uppercase;
+        letter-spacing: 0.14em; font-size: 30px;
       }
+      .display { font-weight: 900; text-transform: lowercase; letter-spacing: -0.04em; line-height: 0.88; }
+      .center { display: flex; align-items: center; justify-content: center; text-align: center; }
+
+      /* chrome */
+      #chrome { display: flex; justify-content: space-between; align-items: flex-start; padding: 150px 70px 0; }
+      #chrome .rule { width: 36px; height: 4px; background: var(--blue); margin-top: 14px; }
+
+      /* F1 tease */
+      .tease { position: absolute; inset: 0; }
+      .tease .w { font-size: 220px; }
+      .tease .w.small { font-size: 150px; }
+      .tease .w .b { color: var(--blue); }
+      .tease .w .r { color: var(--red); }
+
+      /* F2 title */
+      #f2 { flex-direction: column; }
+      .title-a { font-size: 230px; }
+      .title-b { font-size: 420px; color: var(--blue); text-shadow: 14px 14px 0 var(--red); margin-top: -10px; }
+
+      /* F3 montage labels */
+      #f3 { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 70px 330px; }
+      .lbl { position: absolute; left: 70px; bottom: 330px; }
+      .lbl .k { color: var(--white); opacity: 0.85; margin-bottom: 18px; display: flex; gap: 22px; align-items: center; }
+      .lbl .k i { display: block; width: 36px; height: 4px; background: var(--blue); }
+      .lbl .w { font-size: 200px; text-shadow: 0 6px 40px rgba(13, 20, 36, 0.6); }
+      #lbl-tackle .k i, #lbl-repeat .k i { background: var(--red); }
+
+      /* F4 tension */
+      #f4 { flex-direction: column; justify-content: flex-start; padding-top: 330px; }
+      #f4 .kick { color: var(--red); margin-bottom: 26px; }
+      .clockbox { position: relative; width: 760px; height: 300px; }
+      .clk { position: absolute; inset: 0; font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 270px; letter-spacing: -0.04em; color: var(--white); text-shadow: 0 8px 50px rgba(13, 20, 36, 0.8); }
+      .clk.hot { color: #f04b4b; }
+      #f4 .sub { font-size: 120px; margin-top: 30px; text-shadow: 0 6px 40px rgba(13, 20, 36, 0.7); }
+
+      /* F5 goal */
+      #f5 { align-items: flex-end; padding-bottom: 300px; }
+      .goal { font-size: 400px; font-style: italic; color: var(--white); text-shadow: 12px 12px 0 var(--blue), 24px 24px 0 var(--red); }
+
+      /* F6 features */
+      .card {
+        position: absolute; left: 0; right: 0; top: 1180px; padding: 56px 70px 64px;
+        background: var(--blue); color: var(--ink);
+      }
+      .card.red { background: var(--red); }
+      .card.white { background: var(--white); }
+      .card .k { color: rgba(13, 20, 36, 0.7); margin-bottom: 20px; }
+      .card .w { font-size: 132px; line-height: 0.92; }
+
+      /* F7 end card */
+      #f7 { flex-direction: column; }
+      .end-a { font-size: 200px; }
+      .end-b { font-size: 360px; color: var(--blue); text-shadow: 12px 12px 0 var(--red); margin-top: -6px; }
+      .end-sub { font-size: 84px; font-weight: 600; margin-top: 70px; text-transform: lowercase; }
+      .pill {
+        margin-top: 80px; padding: 34px 90px; border-radius: 100px; background: var(--white); color: var(--ink);
+        font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 52px; letter-spacing: 0.14em; text-transform: uppercase;
+      }
+      .end-foot { position: absolute; left: 0; right: 0; bottom: 210px; text-align: center; color: var(--white); opacity: 0.7; }
     </style>
   </head>
   <body>
-    <div
-      id="root"
-      data-composition-id="main"
-      data-start="0"
-      data-duration="10"
-      data-width="1920"
-      data-height="1080"
-    >
-      <h1 id="title" class="clip" data-start="0" data-duration="10" data-track-index="0">Title</h1>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="60" data-width="1080" data-height="1920">
+      <div id="stage">
+      <video id="v00" class="clip shot" src="assets/clips/orbit.mp4" muted playsinline data-start="0" data-duration="8" data-media-start="2.000" data-track-index="0"></video>
+      <video id="v01" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="8" data-duration="2" data-media-start="1.000" data-track-index="0"></video>
+      <video id="v02" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="10" data-duration="2" data-media-start="1.500" data-track-index="0"></video>
+      <video id="v03" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="12" data-duration="2" data-media-start="1.000" data-track-index="0"></video>
+      <video id="v04" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="14" data-duration="2" data-media-start="0.500" data-track-index="0"></video>
+      <video id="v05" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="16" data-duration="2" data-media-start="21.000" data-track-index="0"></video>
+      <video id="v06" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="18" data-duration="2" data-media-start="11.500" data-track-index="0"></video>
+      <video id="v07" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="20" data-duration="2" data-media-start="11.500" data-track-index="0"></video>
+      <video id="v08" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="22" data-duration="2" data-media-start="4.500" data-track-index="0"></video>
+      <video id="v09" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="24" data-duration="2" data-media-start="14.000" data-track-index="0"></video>
+      <video id="v10" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="26" data-duration="0.8" data-media-start="3.000" data-track-index="0"></video>
+      <video id="v11" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="26.8" data-duration="13.2" data-media-start="11.167" data-track-index="0"></video>
+      <video id="v12" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="40" data-duration="1" data-media-start="23.000" data-track-index="0"></video>
+      <video id="v13" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="41" data-duration="1" data-media-start="15.500" data-track-index="0"></video>
+      <video id="v14" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="42" data-duration="1" data-media-start="13.500" data-track-index="0"></video>
+      <video id="v15" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="43" data-duration="1" data-media-start="6.000" data-track-index="0"></video>
+      <video id="v16" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="44" data-duration="1" data-media-start="4.000" data-track-index="0"></video>
+      <video id="v17" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="45" data-duration="1" data-media-start="2.000" data-track-index="0"></video>
+      <video id="v18" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="46" data-duration="1" data-media-start="25.500" data-track-index="0"></video>
+      <video id="v19" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="47" data-duration="1" data-media-start="16.800" data-track-index="0"></video>
+      <video id="v20" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="48" data-duration="1" data-media-start="15.500" data-track-index="0"></video>
+      <video id="v21" class="clip shot" src="assets/clips/follow.mp4" muted playsinline data-start="49" data-duration="1" data-media-start="13.000" data-track-index="0"></video>
+      <video id="v22" class="clip shot" src="assets/clips/low.mp4" muted playsinline data-start="50" data-duration="1" data-media-start="0.500" data-track-index="0"></video>
+      <video id="v23" class="clip shot" src="assets/clips/side.mp4" muted playsinline data-start="51" data-duration="1" data-media-start="3.000" data-track-index="0"></video>
+      <video id="v24" class="clip shot" src="assets/clips/orbit.mp4" muted playsinline data-start="52" data-duration="8" data-media-start="5.500" data-track-index="0"></video>
+      </div>
+
+      <div id="grade" class="clip layer" data-start="0" data-duration="60" data-track-index="1"></div>
+      <div id="vignette" class="clip layer" data-start="0" data-duration="60" data-track-index="2"></div>
+
+      <div id="hudmask" class="clip layer" data-start="26" data-duration="8" data-track-index="3"></div>
+
+      <div id="chrome" class="clip layer mono" data-start="0" data-duration="52" data-track-index="3">
+        <div id="chrome-l"><div>football 3d</div><div class="rule"></div></div>
+        <div id="chrome-r">official trailer</div>
+      </div>
+
+      <div id="f1" class="clip layer" data-start="0" data-duration="8" data-track-index="4">
+        <div id="t1" class="tease center"><div class="w display">2 players</div></div>
+        <div id="t2" class="tease center"><div class="w display">1 ball</div></div>
+        <div id="t3" class="tease center"><div class="w display"><span class="b">2</span>:<span class="r">00</span></div></div>
+        <div id="t4" class="tease center"><div class="w small display">who scores?</div></div>
+      </div>
+
+      <div id="f2" class="clip layer center" data-start="8" data-duration="2" data-track-index="4">
+        <div id="f2a" class="title-a display">football</div>
+        <div id="f2b" class="title-b display">3d</div>
+      </div>
+
+      <div id="f3" class="clip layer" data-start="10" data-duration="16" data-track-index="4">
+        <div id="lbl-dribble" class="lbl"><div class="k mono"><i></i>01 / 04</div><div class="w display">dribble.</div></div>
+        <div id="lbl-tackle" class="lbl"><div class="k mono"><i></i>02 / 04</div><div class="w display">tackle.</div></div>
+        <div id="lbl-shoot" class="lbl"><div class="k mono"><i></i>03 / 04</div><div class="w display">shoot.</div></div>
+        <div id="lbl-repeat" class="lbl"><div class="k mono"><i></i>04 / 04</div><div class="w display">repeat.</div></div>
+      </div>
+
+      <div id="f4" class="clip layer center" data-start="26" data-duration="8" data-track-index="4">
+        <div id="f4k" class="kick mono">final seconds</div>
+        <div class="clockbox">
+          <div class="clk center" id="c8">0:08</div>
+          <div class="clk center" id="c7">0:07</div>
+          <div class="clk center" id="c6">0:06</div>
+          <div class="clk center" id="c5">0:05</div>
+          <div class="clk center hot" id="c4">0:04</div>
+          <div class="clk center hot" id="c3">0:03</div>
+          <div class="clk center hot" id="c2">0:02</div>
+          <div class="clk center hot" id="c1">0:01</div>
+        </div>
+        <div id="f4s" class="sub display">one chance.</div>
+      </div>
+
+      <div id="f5" class="clip layer center" data-start="34" data-duration="6" data-track-index="4">
+        <div id="goal" class="goal display">goal!</div>
+      </div>
+
+      <div id="f6" class="clip layer" data-start="40" data-duration="12" data-track-index="4">
+        <div id="card1" class="card"><div class="k mono">no download</div><div class="w display">plays in your browser.</div></div>
+        <div id="card2" class="card red"><div class="k mono">your call</div><div class="w display">keyboard or xbox pad.</div></div>
+        <div id="card3" class="card white"><div class="k mono">couch mode</div><div class="w display">1 v 1. same screen.</div></div>
+      </div>
+
+      <div id="f7" class="clip layer center" data-start="52" data-duration="8" data-track-index="4">
+        <div id="e1" class="end-a display">football</div>
+        <div id="e2" class="end-b display">3d</div>
+        <div id="e3" class="end-sub">grab a friend.</div>
+        <div id="e4" class="pill">play now</div>
+        <div id="e5" class="end-foot mono">2 players · 1 ball · 2:00</div>
+      </div>
+
+      <div id="flash" class="clip layer" data-start="0" data-duration="60" data-track-index="5"></div>
+
+      <audio id="music" src="assets/music.mp3" data-start="0" data-duration="60" data-track-index="6" data-volume="1"></audio>
     </div>
     <script>
       const tl = gsap.timeline({ paused: true });
-      // Example: tl.fromTo("#title", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0);
+      const B = 0.5; // one beat at 120 BPM
+      gsap.set("#stage", { x: 0, y: 0 });
+
+      // ---- base states ----
+
+      // grade: how much the ink veil dims the footage, per section
+      tl.fromTo("#grade", { backgroundColor: "rgba(13, 20, 36, 0.72)" }, { backgroundColor: "rgba(13, 20, 36, 0.55)", duration: 8, ease: "none" }, 0);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0.25)" }, 8);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0.08)" }, 10);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0.32)" }, 26);
+      tl.to("#grade", { backgroundColor: "rgba(13, 20, 36, 0.12)", duration: 8, ease: "power1.in" }, 26);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0)" }, 34);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0.1)" }, 40);
+      tl.set("#grade", { backgroundColor: "rgba(13, 20, 36, 0.62)" }, 52);
+
+      // impacts: white flash + stage shake
+      function impact(t, strength, first) {
+        tl.fromTo("#flash", { opacity: 0.9 * strength }, { opacity: 0, duration: 0.35, ease: "power2.out", immediateRender: false }, t);
+        tl.fromTo("#stage", { x: 0, y: 0 }, { immediateRender: false, keyframes: [
+          { x: -26 * strength, y: 18 * strength, duration: 0.04 },
+          { x: 22 * strength, y: -14 * strength, duration: 0.05 },
+          { x: -12 * strength, y: 8 * strength, duration: 0.06 },
+          { x: 0, y: 0, duration: 0.12 }
+        ], ease: "none" }, t);
+      }
+      impact(8, 1, true); impact(34, 1); impact(52, 0.8);
+      // small hits on each montage / feature cut
+      for (let k = 1; k < 8; k++) tl.fromTo("#flash", { opacity: 0.18 }, { opacity: 0, duration: 0.18, immediateRender: false }, 10 + 2 * k);
+
+      // ---- F1 tease: one line per bar ----
+      ["#t1", "#t2", "#t3", "#t4"].forEach((id, i) => {
+        const t = i * 2;
+        tl.fromTo(id, { opacity: 0 }, { opacity: 1, duration: 0.06 }, t);
+        tl.fromTo(id + " .w", { scale: 1.35, filter: "blur(18px)" }, { scale: 1, filter: "blur(0px)", duration: 0.32, ease: "expo.out" }, t);
+        tl.to(id + " .w", { scale: 0.94, duration: 1.5, ease: "none" }, t + 0.32);
+        tl.to(id, { opacity: 0, duration: 0.12 }, t + 1.86);
+      });
+      tl.fromTo("#chrome", { opacity: 0 }, { opacity: 1, duration: 0.6 }, 0.2);
+
+      // ---- F2 title slam ----
+      tl.fromTo("#f2a", { scale: 2.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.22, ease: "power4.out" }, 8);
+      tl.fromTo("#f2b", { scale: 3, opacity: 0, rotation: -8 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.26, ease: "back.out(2)" }, 8 + B / 2);
+      tl.to("#f2", { scale: 1.08, duration: 1.7, ease: "none" }, 8.3);
+      tl.to("#f2b", { x: 1100, duration: 0.25, ease: "power3.in" }, 9.75);
+      tl.to("#f2a", { x: -1100, duration: 0.25, ease: "power3.in" }, 9.75);
+
+      // ---- F3 montage labels, two bars each ----
+      ["#lbl-dribble", "#lbl-tackle", "#lbl-shoot", "#lbl-repeat"].forEach((id, i) => {
+        const t = 10 + i * 4;
+        tl.set(id, { opacity: 1 }, t);
+        tl.fromTo(id + " .k", { x: -60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.fromTo(id + " .w", { yPercent: 70, opacity: 0, skewX: -12 }, { yPercent: 0, opacity: 1, skewX: 0, duration: 0.35, ease: "power4.out" }, t + 0.05);
+        tl.to(id + " .w", { x: 30, duration: 3.4, ease: "none" }, t + 0.4);
+        tl.to(id, { opacity: 0, duration: 0.15 }, t + 3.85);
+      });
+
+      // ---- F4 the clock runs out ----
+      tl.fromTo("#f4k", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.5 }, 26.1);
+      for (let s = 8; s >= 1; s--) {
+        const t = 26 + (8 - s);
+        tl.set("#c" + s, { opacity: 1 }, t);
+        tl.fromTo("#c" + s, { scale: s <= 4 ? 1.25 : 1.12 }, { scale: 1, duration: 0.3, ease: "power3.out" }, t);
+        tl.set("#c" + s, { opacity: 0 }, t + 1);
+      }
+      tl.fromTo("#f4s", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 30);
+      tl.to("#f4", { scale: 1.06, duration: 4, ease: "power1.in" }, 30);
+
+      // ---- F5 GOAL ----
+      tl.fromTo("#goal", { scale: 3.2, opacity: 0, rotation: -10 }, { scale: 1, opacity: 1, rotation: -4, duration: 0.3, ease: "back.out(1.8)" }, 34);
+      tl.to("#goal", { scale: 1.12, duration: 5.2, ease: "none" }, 34.3);
+      tl.to("#goal", { opacity: 0, y: 120, duration: 0.25, ease: "power2.in" }, 39.75);
+
+      // ---- F6 features, four bars each ----
+      ["#card1", "#card2", "#card3"].forEach((id, i) => {
+        const t = 40 + i * 4;
+        tl.set(id, { opacity: 1 }, t);
+        tl.fromTo(id, { xPercent: i % 2 ? 100 : -100 }, { xPercent: 0, duration: 0.3, ease: "power4.out" }, t);
+        tl.fromTo(id + " .w", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, t + 0.15);
+        tl.to(id, { xPercent: i % 2 ? -100 : 100, duration: 0.22, ease: "power3.in" }, t + 3.78);
+      });
+
+      // ---- F7 end card ----
+      tl.fromTo("#e1", { scale: 2.2, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: "power4.out" }, 52);
+      tl.fromTo("#e2", { scale: 2.8, opacity: 0, rotation: -8 }, { scale: 1, opacity: 1, rotation: 0, duration: 0.3, ease: "back.out(2)" }, 52 + B / 2);
+      tl.fromTo("#e3", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 53.5);
+      tl.fromTo("#e4", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.2)" }, 54.5);
+      for (let t = 56; t < 59.5; t += 1) tl.fromTo("#e4", { scale: 1.08 }, { scale: 1, duration: 0.45, ease: "power2.out", immediateRender: false }, t);
+      tl.fromTo("#e5", { opacity: 0 }, { opacity: 0.7, duration: 0.6 }, 55.5);
+      tl.to("#f7", { opacity: 0, duration: 1.2, ease: "power1.in" }, 58.8);
+
       window.__timelines["main"] = tl;
-      tl.seek(0);
     </script>
   </body>
 </html>
