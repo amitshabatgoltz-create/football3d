@@ -2,11 +2,36 @@
 format: 1080x1920
 duration: 60s
 message: "GOAL RUSH — why we play: 7v7 3D football with a full season to climb"
-arc: Why we play → PLAY ___ chain → Last attack → GOAL → Play for football → End card
+arc: Why we play → PLAY ___ chain over gameplay → Hero goal → Play for football → End card
 reference: REFERENCE-UFL.md (UFL "Why We Play" launch trailer)
 audience: casual gamers on TikTok / Reels / Shorts
 mode: autonomous
 music: host
+---
+
+v4: same "PLAY ___" idea, rebuilt on new footage after feedback on v3 (too many black cards, weak gameplay, dull menu cards).
+No flag cards and no menu cards: every word sits on gameplay. All footage is new, rendered from the real game with a
+cinematic camera (capture/README.md), seed 10: AI vs AI, deterministic. One shot per bar, graded brighter and punchier.
+
+| time | content |
+|---|---|
+| 0–4 | kickoff, slow low orbit around the striker; WHY WE PLAY |
+| 4–6 | overhead drone |
+| 6–8 | touchline low, run — PLAY 7V7 |
+| 8–10 | chase cam behind the runner |
+| 10–12 | ball-cam dribble — PLAY [7V7 → FOR NUTMEGS] |
+| 12–16 | two slide tackles, touchline low — PLAY / GEGENPRESSING |
+| 16–18 | drone, passing — PLAY TIKI-TAKA |
+| 18–22 | two keeper saves from behind the goal, slowed — PLAY [TIKI-TAKA → TO CHALLENGE] |
+| 22–24 | goal from behind the keeper — PLAY / TO SCORE |
+| 24–26 | celebration orbit — PLAY [TO SCORE → TOGETHER] |
+| 26–30 | save, telephoto goal |
+| 30–38 | hero goal: 3.5 s solo run (chase) → strike (0.4x) → ball-cam (0.3x) → behind the keeper (0.35x); crosses the line at 38.0 with a lime flash |
+| 38.7–42 | scorer celebrates in front of the crowd |
+| 42–44.5 | PLAY FOR GLORY |
+| 44.5–47.5 | chase run — PLAY / FOR FOOTBALL |
+| 47.5–60 | end card: key art, "compete. score. dominate.", PLAY button, over the celebration blurred |
+
 ---
 
 v3: rebuilt in the style of the UFL "Why We Play" trailer (see REFERENCE-UFL.md).

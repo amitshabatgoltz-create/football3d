@@ -1,0 +1,19 @@
+{"seed":10,"shots":[
+ {"name":"a01-low-run","from":175,"to":240,"cam":{"type":"low","dist":8,"h":0.55,"fov":32}},
+ {"name":"a02-gk-save","from":375,"to":415,"cam":{"type":"goal","gx":-1,"back":1.8,"h":1.2,"z":0.5,"fov":40}},
+ {"name":"a03-chase-run","from":700,"to":790,"cam":{"type":"chase","player":2,"back":5.5,"h":2.0,"fov":36}},
+ {"name":"a04-drone","from":1260,"to":1330,"cam":{"type":"drone","h":38,"fov":36}},
+ {"name":"a05-low-tackle","from":1770,"to":1820,"cam":{"type":"low","dist":7,"h":0.5,"fov":34}},
+ {"name":"a06-gk-save2","from":1390,"to":1430,"cam":{"type":"goal","gx":-1,"back":1.8,"h":1.2,"z":0.5,"fov":40}},
+ {"name":"a07-hero-run","from":2045,"to":2135,"cam":{"type":"chase","player":6,"back":5.5,"h":2.0,"fov":36}},
+ {"name":"a08-hero-cele","from":2185,"to":2335,"cam":{"type":"orbit","player":6,"r":3.8,"h":1.3,"ly":1.1,"spin":0.4,"fov":34,"smooth":0.2}},
+ {"name":"a09-ballcam-run","from":3400,"to":3460,"cam":{"type":"ball","ahead":3.2,"h":0.5,"fov":42}},
+ {"name":"a10-goal-tele","from":3810,"to":3860,"cam":{"type":"tele","h":8,"dist":40,"fov":20}},
+ {"name":"a11-cele2","from":3865,"to":3960,"cam":{"type":"orbit","player":6,"r":4.2,"h":1.5,"ly":1.1,"spin":-0.35,"fov":34,"smooth":0.2}},
+ {"name":"a12-chase-run2","from":4200,"to":4290,"cam":{"type":"chase","player":12,"back":5.5,"h":2.0,"fov":36}},
+ {"name":"a13-low-tackle2","from":5110,"to":5160,"cam":{"type":"low","side":-1,"dist":7,"h":0.5,"fov":34}},
+ {"name":"a14-gk-save3","from":5580,"to":5620,"cam":{"type":"goal","gx":1,"back":1.8,"h":1.2,"z":-0.5,"fov":40}},
+ {"name":"a15-goal-net","from":8150,"to":8195,"cam":{"type":"goal","gx":1,"back":1.8,"h":1.2,"z":-0.5,"fov":40}},
+ {"name":"a16-cele3","from":8195,"to":8320,"cam":{"type":"orbit","player":6,"r":3.6,"h":1.2,"ly":1.1,"spin":0.45,"fov":34,"smooth":0.2}},
+ {"name":"a17-drone2","from":9050,"to":9140,"cam":{"type":"drone","h":38,"fov":36}}
+]}
