@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAYO Gaming Shop</title>
+<meta name="description" content="ציוד גיימינג: מקלדות, עכברים, פדים, מיקרופונים ואוזניות">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --surface: #151517;
+    --surface-2: #1e1e21;
+    --line: #2a2a2e;
+    --text: #f4f4f5;
+    --muted: #9b9ba3;
+    --accent: #ffffff;
+    --accent-ink: #0a0a0b;
+    --danger: #ff5c7a;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Heebo", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+  /* Demo banner */
+  .demo-bar {
+    background: var(--accent);
+    color: var(--accent-ink);
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 6px 16px;
+  }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(10,10,11,.88);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 22px; letter-spacing: 1px; }
+  .logo-badge {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #000; border: 2px solid var(--text);
+    display: grid; place-items: center; font-size: 12px; font-weight: 900; letter-spacing: 0;
+  }
+  .logo small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+  /* Hero logo, recreated from the shop's logo */
+  .brand { display: inline-flex; flex-direction: column; align-items: center; position: relative; margin-bottom: 28px; }
+  .brand-pads { display: flex; gap: 8px; align-self: flex-start; margin-inline-start: 18%; color: var(--text); }
+  .brand-pads svg { width: 46px; }
+  .brand-pads svg + svg { width: 34px; opacity: .55; }
+  .brand-word {
+    font-family: "Arial Black", "Heebo", sans-serif; font-weight: 900;
+    font-size: clamp(64px, 16vw, 150px); line-height: .9; letter-spacing: -2px;
+    direction: ltr; position: relative;
+  }
+  .brand-cursor { position: absolute; width: .32em; bottom: -.18em; right: -.12em; transform: rotate(-20deg); }
+  .brand-kb { width: clamp(90px, 20vw, 150px); margin-top: 14px; color: var(--text); }
+  .brand-slogan { font-weight: 900; font-size: clamp(18px, 3.6vw, 26px); margin-top: 10px; }
+  .nav-links { display: flex; gap: 24px; color: var(--muted); font-weight: 500; }
+  .nav-links a:hover { color: var(--text); }
+  .cart-btn {
+    position: relative; display: flex; align-items: center; gap: 8px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: 8px 14px; border-radius: 999px; font-weight: 700;
+  }
+  .cart-count {
+    background: var(--accent); color: var(--accent-ink);
+    min-width: 22px; height: 22px; border-radius: 999px;
+    display: grid; place-items: center; font-size: 13px; padding: 0 6px;
+  }
+  .cart-btn.bump { animation: bump .3s ease; }
+  @keyframes bump { 50% { transform: scale(1.12); } }
+
+  /* Hero */
+  .hero { padding: 72px 0 56px; text-align: center; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% 10% auto; height: 420px;
+    background: radial-gradient(closest-side, rgba(255,255,255,.08), transparent);
+    pointer-events: none;
+  }
+  .hero h1 { font-size: clamp(34px, 7vw, 64px); font-weight: 900; line-height: 1.1; position: relative; }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 18px; margin: 16px auto 28px; max-width: 520px; position: relative; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent); color: var(--accent-ink);
+    font-weight: 700; padding: 13px 26px; border-radius: 999px;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,255,255,.18); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .perks { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 28px; margin-top: 40px; color: var(--muted); font-size: 15px; position: relative; }
+
+  /* Shop */
+  section { padding: 48px 0; }
+  .section-title { font-size: 28px; font-weight: 900; margin-bottom: 20px; }
+  .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 20px; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; padding: 8px 16px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line); color: var(--muted); font-weight: 500;
+  }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: border-color .2s, transform .2s;
+  }
+  .card:hover { border-color: #3d3d44; transform: translateY(-3px); }
+  .thumb {
+    aspect-ratio: 4/3; display: grid; place-items: center; position: relative;
+    background: linear-gradient(145deg, #1c1c20, #0f0f11);
+  }
+  .thumb svg { width: 46%; height: auto; color: var(--text); opacity: .9; }
+  .tag {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--danger); color: #fff; font-size: 12px; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px;
+  }
+  .tag.new { background: var(--accent); color: var(--accent-ink); }
+  .card-body { padding: 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .card-cat { color: var(--muted); font-size: 13px; }
+  .card-name { font-weight: 700; font-size: 16px; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 10px; }
+  .price { font-weight: 900; font-size: 20px; }
+  .price s { color: var(--muted); font-weight: 400; font-size: 14px; margin-inline-start: 6px; }
+  .add {
+    background: var(--text); color: var(--bg); font-weight: 700;
+    padding: 8px 14px; border-radius: 10px; font-size: 14px;
+  }
+  .add:hover { background: var(--accent); color: var(--accent-ink); }
+
+  /* About / contact */
+  .about { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  .box h3 { font-size: 18px; margin-bottom: 6px; }
+  .box p { color: var(--muted); }
+  .socials { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0; color: var(--muted); text-align: center; font-size: 14px; }
+
+  /* Cart drawer */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 40; }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; bottom: 0; left: 0; width: min(400px, 100%);
+    background: var(--surface); border-right: 1px solid var(--line);
+    transform: translateX(-100%); transition: transform .3s ease; z-index: 50;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: none; }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 16px; border-bottom: 1px solid var(--line); }
+  .drawer-head h2 { font-size: 20px; }
+  .close { font-size: 26px; line-height: 1; color: var(--muted); }
+  .items { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  .item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .item-thumb { width: 56px; height: 56px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
+  .item-thumb svg { width: 60%; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-weight: 700; font-size: 15px; }
+  .item-price { color: var(--muted); font-size: 14px; }
+  .qty { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 2px; }
+  .qty button { width: 28px; height: 28px; border-radius: 6px; font-weight: 700; }
+  .qty button:hover { background: var(--line); }
+  .empty { text-align: center; color: var(--muted); padding: 48px 0; }
+  .drawer-foot { padding: 16px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+  .total { display: flex; justify-content: space-between; font-size: 18px; font-weight: 700; }
+  .drawer-foot .btn { width: 100%; }
+
+  /* Modal */
+  .modal {
+    position: fixed; inset: 0; display: grid; place-items: center; padding: 16px;
+    z-index: 60; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal.open { opacity: 1; pointer-events: auto; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px 22px; max-width: 380px; width: 100%; text-align: center;
+  }
+  .modal-box h3 { font-size: 22px; margin-bottom: 8px; }
+  .modal-box p { color: var(--muted); margin-bottom: 20px; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 20px);
+    background: var(--text); color: var(--bg); font-weight: 700;
+    padding: 10px 18px; border-radius: 999px; opacity: 0; transition: .25s; z-index: 70;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .hero { padding: 48px 0 40px; }
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .card-body { padding: 10px; }
+    .card-name { font-size: 14px; }
+    .price { font-size: 17px; }
+    .card-foot { flex-direction: column; align-items: stretch; gap: 8px; }
+    .add { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚡ אתר לדוגמה: המוצרים והמחירים להמחשה בלבד</div>
+
+<header>
+  <div class="wrap nav">
+    <a href="#" class="logo">
+      <span class="logo-badge">MAYO</span>
+      <span>MAYO<small>חנות הגיימינג הגדולה בארץ</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#shop">מוצרים</a>
+      <a href="#about">עלינו</a>
+      <a href="#contact">צור קשר</a>
+    </nav>
+    <button class="cart-btn" id="cartBtn" aria-label="עגלת קניות">
+      🛒 <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <div class="brand" aria-label="MAYO, חנות הגיימינג הגדולה בארץ">
+        <div class="brand-pads" aria-hidden="true">
+          <svg viewBox="0 0 64 40" fill="currentColor"><path d="M16 4h32c8 0 13 6 15 16 2 11-2 18-8 18-5 0-7-6-11-9H20c-4 3-6 9-11 9-6 0-10-7-8-18C3 10 8 4 16 4z"/><g fill="#0a0a0b"><rect x="13" y="16" width="10" height="3"/><rect x="16.5" y="12.5" width="3" height="10"/><circle cx="46" cy="13" r="2.2"/><circle cx="51" cy="18" r="2.2"/><circle cx="41" cy="18" r="2.2"/><circle cx="46" cy="23" r="2.2"/></g></svg>
+          <svg viewBox="0 0 64 40" fill="currentColor"><rect x="2" y="10" width="60" height="26" rx="13"/><g fill="#0a0a0b"><rect x="11" y="21" width="10" height="3"/><rect x="14.5" y="17.5" width="3" height="10"/><circle cx="45" cy="20" r="2.5"/><circle cx="52" cy="24" r="2.5"/></g></svg>
+        </div>
+        <div class="brand-word">MAYO<svg class="brand-cursor" viewBox="0 0 30 44" fill="currentColor" aria-hidden="true"><path d="M2 2l26 24-12 2 8 14-5 2-8-14-9 8z"/></svg></div>
+        <svg class="brand-kb" viewBox="0 0 120 44" fill="none" aria-hidden="true"><rect x="3" y="3" width="114" height="38" rx="6" stroke="currentColor" stroke-width="4"/><g fill="currentColor"><rect x="12" y="11" width="96" height="6" rx="1"/><rect x="12" y="20" width="96" height="6" rx="1"/><rect x="12" y="29" width="14" height="5" rx="1"/><rect x="30" y="29" width="62" height="5" rx="1"/><rect x="96" y="29" width="12" height="5" rx="1"/></g><g stroke="#0a0a0b" stroke-width="2"><path d="M20 11v15M28 11v15M36 11v15M44 11v15M52 11v15M60 11v15M68 11v15M76 11v15M84 11v15M92 11v15M100 11v15"/></g></svg>
+        <div class="brand-slogan">חנות הגיימינג הגדולה בארץ</div>
+      </div>
+      <p>הסטאפ שלך מתחיל כאן: מקלדות, עכברים, פדים, מיקרופונים ואוזניות לגיימרים, במחירים שלא תמצאו בחנויות.</p>
+      <a href="#shop" class="btn">לכל המוצרים ←</a>
+      <div class="perks">
+        <span>🚚 משלוח לכל הארץ</span>
+        <span>🔒 תשלום מאובטח</span>
+        <span>🛡️ אחריות על כל מוצר</span>
+      </div>
+    </div>
+  </div>
+
+  <section id="shop">
+    <div class="wrap">
+      <h2 class="section-title">המוצרים שלנו</h2>
+      <div class="filters" id="filters"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="wrap about">
+      <div class="box">
+        <h3>🎮 מי אנחנו</h3>
+        <p>MAYO Gaming Shop: גיימרים שמוכרים לגיימרים. אנחנו בוחרים רק ציוד שהיינו משתמשים בו בעצמנו.</p>
+      </div>
+      <div class="box">
+        <h3>🚚 משלוחים</h3>
+        <p>משלוח עד הבית תוך 3–5 ימי עסקים. איסוף עצמי בתיאום מראש.</p>
+      </div>
+      <div class="box" id="contact">
+        <h3>💬 צור קשר</h3>
+        <p>שאלה על מוצר? דברו איתנו.</p>
+        <div class="socials">
+          <a class="btn" href="https://wa.me/972500000000" target="_blank" rel="noopener">וואטסאפ</a>
+          <a class="btn ghost" href="https://www.tiktok.com/@mayo_gaming_shop" target="_blank" rel="noopener">TikTok</a>
+          <a class="btn ghost" href="#" target="_blank" rel="noopener">Instagram</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">© MAYO Gaming Shop · כל הזכויות שמורות</div>
+</footer>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="עגלת קניות">
+  <div class="drawer-head">
+    <h2>העגלה שלך</h2>
+    <button class="close" id="closeCart" aria-label="סגור">×</button>
+  </div>
+  <div class="items" id="items"></div>
+  <div class="drawer-foot">
+    <div class="total"><span>סה״כ</span><span id="total">0 ₪</span></div>
+    <button class="btn" id="checkout">לתשלום 🔒</button>
+  </div>
+</aside>
+
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>זה אתר לדוגמה 😉</h3>
+    <p>באתר האמיתי, כאן הלקוח יעבור לדף תשלום מאובטח באשראי או בביט.</p>
+    <button class="btn" id="closeModal">הבנתי</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const ICONS = {
+    keyboard: '<svg viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="4" width="60" height="32" rx="5"/><path d="M11 13h2M19 13h2M27 13h2M35 13h2M43 13h2M51 13h2M11 21h2M19 21h2M27 21h2M35 21h2M43 21h2M51 21h2M18 29h28"/></svg>',
+    mouse: '<svg viewBox="0 0 40 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="4" y="2" width="32" height="56" rx="16"/><path d="M20 2v20M4 22h32"/><rect x="17" y="9" width="6" height="8" rx="3" fill="currentColor"/></svg>',
+    pad: '<svg viewBox="0 0 64 40" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="60" height="32" rx="6"/><rect x="6" y="8" width="52" height="24" rx="3" stroke-dasharray="3 4" opacity=".6"/></svg>',
+    mic: '<svg viewBox="0 0 40 60" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="11" y="2" width="18" height="32" rx="9"/><path d="M5 26a15 15 0 0 0 30 0M20 41v12M11 57h18M11 12h6M11 19h6M11 26h6"/></svg>',
+    headset: '<svg viewBox="0 0 60 56" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 34V28a22 22 0 0 1 44 0v6"/><rect x="4" y="32" width="12" height="18" rx="5"/><rect x="44" y="32" width="12" height="18" rx="5"/><path d="M10 50c0 4 6 5 14 5"/></svg>'
+  };
+
+  const CATEGORIES = [
+    { id: 'all', name: 'הכל' },
+    { id: 'keyboard', name: 'מקלדות' },
+    { id: 'mouse', name: 'עכברים' },
+    { id: 'pad', name: 'פדים' },
+    { id: 'mic', name: 'מיקרופונים' },
+    { id: 'headset', name: 'אוזניות' }
+  ];
+
+  // Example products: replace with the real catalog
+  const PRODUCTS = [
+    { id: 1,  cat: 'keyboard', name: 'מקלדת מכנית RGB 60%',        price: 249, old: 299, tag: 'מבצע' },
+    { id: 2,  cat: 'keyboard', name: 'מקלדת מכנית Full Size',      price: 329 },
+    { id: 3,  cat: 'keyboard', name: 'מקלדת אלחוטית TKL',          price: 389, tag: 'חדש' },
+    { id: 4,  cat: 'mouse',    name: 'עכבר גיימינג קל 59g',        price: 179, tag: 'חדש' },
+    { id: 5,  cat: 'mouse',    name: 'עכבר אלחוטי RGB',            price: 219, old: 259, tag: 'מבצע' },
+    { id: 6,  cat: 'mouse',    name: 'עכבר ארגונומי 12 כפתורים',   price: 149 },
+    { id: 7,  cat: 'pad',      name: 'פד XXL שחור',                price: 79 },
+    { id: 8,  cat: 'pad',      name: 'פד RGB עם תאורה',            price: 119, tag: 'חדש' },
+    { id: 9,  cat: 'pad',      name: 'פד מהיר Speed',              price: 89 },
+    { id: 10, cat: 'mic',      name: 'מיקרופון USB לסטרימינג',     price: 239 },
+    { id: 11, cat: 'mic',      name: 'מיקרופון עם זרוע + פופ פילטר', price: 349, old: 399, tag: 'מבצע' },
+    { id: 12, cat: 'headset',  name: 'אוזניות גיימינג 7.1',        price: 199 },
+    { id: 13, cat: 'headset',  name: 'אוזניות אלחוטיות Pro',       price: 449, tag: 'חדש' },
+    { id: 14, cat: 'headset',  name: 'אוזניות עם מיקרופון נשלף',  price: 159 }
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  const fmt = (n) => n.toLocaleString('he-IL') + ' ₪';
+  const catName = (id) => CATEGORIES.find(c => c.id === id).name;
+
+  let filter = 'all';
+  let cart = {};
+  try { cart = JSON.parse(localStorage.getItem('mayo-cart')) || {}; } catch (e) {}
+  const saveCart = () => { try { localStorage.setItem('mayo-cart', JSON.stringify(cart)); } catch (e) {} };
+
+  function renderFilters() {
+    $('#filters').innerHTML = CATEGORIES.map(c =>
+      `<button class="chip ${c.id === filter ? 'active' : ''}" data-cat="${c.id}">${c.name}</button>`
+    ).join('');
+  }
+
+  function renderGrid() {
+    const list = PRODUCTS.filter(p => filter === 'all' || p.cat === filter);
+    $('#grid').innerHTML = list.map(p => `
+      <article class="card">
+        <div class="thumb">
+          ${p.tag ? `<span class="tag ${p.tag === 'חדש' ? 'new' : ''}">${p.tag}</span>` : ''}
+          ${ICONS[p.cat]}
+        </div>
+        <div class="card-body">
+          <span class="card-cat">${catName(p.cat)}</span>
+          <h3 class="card-name">${p.name}</h3>
+          <div class="card-foot">
+            <span class="price">${fmt(p.price)}${p.old ? `<s>${fmt(p.old)}</s>` : ''}</span>
+            <button class="add" data-add="${p.id}">הוסף לעגלה</button>
+          </div>
+        </div>
+      </article>`).join('');
+  }
+
+  function renderCart() {
+    const entries = Object.entries(cart).filter(([, q]) => q > 0);
+    const count = entries.reduce((s, [, q]) => s + q, 0);
+    const total = entries.reduce((s, [id, q]) => s + PRODUCTS.find(p => p.id == id).price * q, 0);
+    $('#cartCount').textContent = count;
+    $('#total').textContent = fmt(total);
+    $('#checkout').disabled = count === 0;
+    $('#checkout').style.opacity = count ? 1 : .5;
+    $('#items').innerHTML = entries.length ? entries.map(([id, q]) => {
+      const p = PRODUCTS.find(p => p.id == id);
+      return `
+        <div class="item">
+          <div class="item-thumb">${ICONS[p.cat]}</div>
+          <div class="item-info">
+            <div class="item-name">${p.name}</div>
+            <div class="item-price">${fmt(p.price)}</div>
+          </div>
+          <div class="qty">
+            <button data-inc="${id}" aria-label="הוסף">+</button>
+            <span>${q}</span>
+            <button data-dec="${id}" aria-label="הורד">−</button>
+          </div>
+        </div>`;
+    }).join('') : '<div class="empty">העגלה ריקה 🎮</div>';
+  }
+
+  function toast(msg) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  const openCart = (open) => {
+    $('#drawer').classList.toggle('open', open);
+    $('#overlay').classList.toggle('open', open);
+  };
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.cat) { filter = t.dataset.cat; renderFilters(); renderGrid(); }
+    if (t.dataset.add) {
+      cart[t.dataset.add] = (cart[t.dataset.add] || 0) + 1;
+      saveCart(); renderCart(); toast('נוסף לעגלה ✓');
+      const b = $('#cartBtn'); b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+    }
+    if (t.dataset.inc) { cart[t.dataset.inc]++; saveCart(); renderCart(); }
+    if (t.dataset.dec) { cart[t.dataset.dec]--; if (cart[t.dataset.dec] <= 0) delete cart[t.dataset.dec]; saveCart(); renderCart(); }
+  });
+  $('#cartBtn').onclick = () => openCart(true);
+  $('#closeCart').onclick = () => openCart(false);
+  $('#overlay').onclick = () => openCart(false);
+  $('#checkout').onclick = () => $('#modal').classList.add('open');
+  $('#closeModal').onclick = () => $('#modal').classList.remove('open');
+
+  renderFilters();
+  renderGrid();
+  renderCart();
+</script>
+</body>
+</html>
