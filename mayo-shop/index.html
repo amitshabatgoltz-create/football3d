@@ -125,21 +125,22 @@
   .card:hover { border-color: #3d3d44; transform: translateY(-3px); }
   .thumb {
     aspect-ratio: 4/3; display: grid; place-items: center; position: relative;
-    background: linear-gradient(145deg, #1c1c20, #0f0f11);
+    background: #fff;
   }
-  .thumb svg { width: 46%; height: auto; color: var(--text); opacity: .9; }
+  .thumb svg { width: 46%; max-height: 55%; color: #18181b; opacity: .85; }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
   .tag {
     position: absolute; top: 10px; right: 10px;
     background: var(--danger); color: #fff; font-size: 12px; font-weight: 700;
     padding: 3px 10px; border-radius: 999px;
   }
-  .tag.new { background: var(--accent); color: var(--accent-ink); }
+  .tag.new { background: #0a0a0b; color: #fff; }
   .card-body { padding: 14px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
   .card-cat { color: var(--muted); font-size: 13px; }
   .card-name { font-weight: 700; font-size: 16px; }
   .card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 10px; }
   .price { font-weight: 900; font-size: 20px; }
-  .price s { color: var(--muted); font-weight: 400; font-size: 14px; margin-inline-start: 6px; }
+  .price s { display: inline-block; color: var(--muted); font-weight: 400; font-size: 14px; margin-inline-start: 6px; }
   .add {
     background: var(--text); color: var(--bg); font-weight: 700;
     padding: 8px 14px; border-radius: 10px; font-size: 14px;
@@ -170,8 +171,9 @@
   .close { font-size: 26px; line-height: 1; color: var(--muted); }
   .items { flex: 1; overflow-y: auto; padding: 8px 16px; }
   .item { display: flex; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .item-thumb { width: 56px; height: 56px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
-  .item-thumb svg { width: 60%; }
+  .item-thumb { width: 56px; height: 56px; border-radius: 10px; background: #fff; display: grid; place-items: center; flex: none; overflow: hidden; }
+  .item-thumb svg { width: 60%; color: #18181b; }
+  .item-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
   .item-info { flex: 1; min-width: 0; }
   .item-name { font-weight: 700; font-size: 15px; }
   .item-price { color: var(--muted); font-size: 14px; }
@@ -336,14 +338,14 @@
 
   // Example products: replace with the real catalog
   const PRODUCTS = [
-    { id: 1,  cat: 'keyboard', name: 'מקלדת מכנית RGB 60%',        price: 249, old: 299, tag: 'מבצע' },
+    { id: 1,  cat: 'keyboard', name: 'מקלדת מכנית RGB 60%',        price: 249, old: 299, tag: 'מבצע', img: 'images/keyboard-60-rgb.png' },
     { id: 2,  cat: 'keyboard', name: 'מקלדת מכנית Full Size',      price: 329 },
     { id: 3,  cat: 'keyboard', name: 'מקלדת אלחוטית TKL',          price: 389, tag: 'חדש' },
-    { id: 4,  cat: 'mouse',    name: 'עכבר גיימינג קל 59g',        price: 179, tag: 'חדש' },
+    { id: 4,  cat: 'mouse',    name: 'עכבר גיימינג RGB חלת דבש',   price: 179, tag: 'חדש', img: 'images/mouse-rgb.png' },
     { id: 5,  cat: 'mouse',    name: 'עכבר אלחוטי RGB',            price: 219, old: 259, tag: 'מבצע' },
     { id: 6,  cat: 'mouse',    name: 'עכבר ארגונומי 12 כפתורים',   price: 149 },
     { id: 7,  cat: 'pad',      name: 'פד XXL שחור',                price: 79 },
-    { id: 8,  cat: 'pad',      name: 'פד RGB עם תאורה',            price: 119, tag: 'חדש' },
+    { id: 8,  cat: 'pad',      name: 'פד RGB לבן XXL',             price: 119, tag: 'חדש', img: 'images/pad-rgb-white.png' },
     { id: 9,  cat: 'pad',      name: 'פד מהיר Speed',              price: 89 },
     { id: 10, cat: 'mic',      name: 'מיקרופון USB לסטרימינג',     price: 239 },
     { id: 11, cat: 'mic',      name: 'מיקרופון עם זרוע + פופ פילטר', price: 349, old: 399, tag: 'מבצע' },
@@ -354,6 +356,7 @@
 
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => n.toLocaleString('he-IL') + ' ₪';
+  const pic = (p) => p.img ? `<img src="${p.img}" alt="${p.name}" loading="lazy">` : ICONS[p.cat];
   const catName = (id) => CATEGORIES.find(c => c.id === id).name;
 
   let filter = 'all';
@@ -373,7 +376,7 @@
       <article class="card">
         <div class="thumb">
           ${p.tag ? `<span class="tag ${p.tag === 'חדש' ? 'new' : ''}">${p.tag}</span>` : ''}
-          ${ICONS[p.cat]}
+          ${pic(p)}
         </div>
         <div class="card-body">
           <span class="card-cat">${catName(p.cat)}</span>
@@ -398,7 +401,7 @@
       const p = PRODUCTS.find(p => p.id == id);
       return `
         <div class="item">
-          <div class="item-thumb">${ICONS[p.cat]}</div>
+          <div class="item-thumb">${pic(p)}</div>
           <div class="item-info">
             <div class="item-name">${p.name}</div>
             <div class="item-price">${fmt(p.price)}</div>
