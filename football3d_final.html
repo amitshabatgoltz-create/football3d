@@ -46,6 +46,11 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
   text-align:center; font-size:11px; color:rgba(255,255,255,0.3);
   pointer-events:none; z-index:10;
 }
+#padtoast {
+  position:fixed; top:90px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.75); color:#fff; padding:8px 16px; border-radius:20px;
+  font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; z-index:25;
+}
 #loading {
   position:fixed; inset:0; background:rgba(0,0,0,0.9);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -72,11 +77,13 @@ html,body { width:100%; height:100%; overflow:hidden; background:#000; font-fami
 <div id="goalbanner"><span>⚽ GOAL!</span></div>
 <div id="overlay" style="display:none">
   <h1 id="ovtitle">⚽ Football 3D</h1>
-  <p class="sub">🎮 שלט Xbox: ג'ויסטיק שמאלי לזוז • B לתפוס/לבעוט</p>
-  <p class="sub">⌨️ WASD + Space (שחקן 1) | חצים + Enter (שחקן 2)</p>
+  <p class="sub">🎮 שלט Xbox: ג'ויסטיק שמאלי / חצים לזוז • A או B לתפוס ולבעוט • RT לספרינט • Start להתחלה</p>
+  <p class="sub">🎮 שלט ראשון = שחקן 1 (כחול) • שלט שני = שחקן 2 (אדום)</p>
+  <p class="sub">⌨️ WASD + Space + Shift (שחקן 1) | חצים + Enter + Shift ימני (שחקן 2)</p>
   <button id="startBtn">התחל משחק</button>
 </div>
-<div id="hint">🎮 Stick לזוז • B לבעוט • גלגלת עכבר לזום</div>
+<div id="hint">🎮 Stick לזוז • A לבעוט • RT ספרינט • גלגלת עכבר לזום</div>
+<div id="padtoast"></div>
 
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
@@ -189,27 +196,62 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>keys[e.code]=false);
 
 const DEAD=0.15;
+// Controllers: player 1 = first connected pad, player 2 = second.
+// Xbox: left stick / D-pad move, A or B kick, RT or RB sprint, Start = new match.
+function getPad(idx){
+  const gps=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(g=>g&&g.connected);
+  return gps[idx]||null;
+}
+function rumble(idx,ms,strong){
+  const gp=getPad(idx);
+  if(gp&&gp.vibrationActuator&&gp.vibrationActuator.playEffect){
+    gp.vibrationActuator.playEffect('dual-rumble',{duration:ms,strongMagnitude:strong,weakMagnitude:strong*0.7}).catch(()=>{});
+  }
+}
 function getInput(idx){
-  const gps=[...navigator.getGamepads()].filter(Boolean);
-  const gp=gps[idx]||null;
-  let ax=0,ay=0,bDown=false;
+  const gp=getPad(idx);
+  let ax=0,ay=0,bDown=false,sprint=false;
   if(gp){
-    ax=Math.abs(gp.axes[0])>DEAD?gp.axes[0]:0;
-    ay=Math.abs(gp.axes[1])>DEAD?gp.axes[1]:0;
-    bDown=!!(gp.buttons[1]&&gp.buttons[1].pressed);
+    const btn=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed);
+    const x=gp.axes[0]||0,y=gp.axes[1]||0,m=Math.hypot(x,y);
+    if(m>DEAD){const k=Math.min(1,(m-DEAD)/(1-DEAD))/m;ax=x*k;ay=y*k;}
+    if(btn(14))ax=-1;if(btn(15))ax=1;if(btn(12))ay=-1;if(btn(13))ay=1;
+    bDown=btn(0)||btn(1);
+    sprint=btn(5)||(gp.buttons[7]&&gp.buttons[7].value>0.3);
   }
   if(idx===0){
-    if(!gp||(!ax&&!ay)){if(keys['KeyA'])ax=-1;if(keys['KeyD'])ax=1;if(keys['KeyW'])ay=-1;if(keys['KeyS'])ay=1;}
+    if(!ax&&!ay){if(keys['KeyA'])ax=-1;if(keys['KeyD'])ax=1;if(keys['KeyW'])ay=-1;if(keys['KeyS'])ay=1;}
     bDown=bDown||!!keys['Space'];
+    sprint=sprint||!!keys['ShiftLeft'];
   } else {
-    if(!gp||(!ax&&!ay)){if(keys['ArrowLeft'])ax=-1;if(keys['ArrowRight'])ax=1;if(keys['ArrowUp'])ay=-1;if(keys['ArrowDown'])ay=1;}
+    if(!ax&&!ay){if(keys['ArrowLeft'])ax=-1;if(keys['ArrowRight'])ax=1;if(keys['ArrowUp'])ay=-1;if(keys['ArrowDown'])ay=1;}
     bDown=bDown||!!keys['Enter'];
+    sprint=sprint||!!keys['ShiftRight'];
   }
   const mag=Math.hypot(ax,ay);if(mag>1){ax/=mag;ay/=mag;}
-  return{ax,ay,bDown};
+  // stick/W up = away from the camera (+z), so "up" moves up the screen
+  return{ax,ay:-ay,bDown,sprint};
 }
 
-const SPEED=9,CARRY=0.88,KICK=22,KCD=28;
+// "controller connected" toast + Start/A on a pad starts the match from the menu
+const padToast=document.getElementById('padtoast');
+let toastT=null;
+function toast(msg){
+  padToast.textContent=msg;padToast.style.opacity='1';
+  clearTimeout(toastT);toastT=setTimeout(()=>padToast.style.opacity='0',2500);
+}
+window.addEventListener('gamepadconnected',e=>toast('🎮 שלט מחובר: '+(e.gamepad.id.split('(')[0].trim()||'Gamepad')));
+window.addEventListener('gamepaddisconnected',()=>toast('🎮 השלט התנתק'));
+let menuBtnWas=false;
+scene.onBeforeRenderObservable.add(()=>{
+  const ov=document.getElementById('overlay');
+  let down=false;
+  for(let i=0;i<2;i++){const gp=getPad(i);if(gp&&((gp.buttons[9]&&gp.buttons[9].pressed)||(gp.buttons[0]&&gp.buttons[0].pressed)))down=true;}
+  if(down&&!menuBtnWas&&ov.style.display==='flex') document.getElementById('startBtn').click();
+  menuBtnWas=down;
+});
+
+const SPEED=9,SPRINT=1.45,CARRY=0.88,KICK=22,KCD=28;
 const pMesh=[p1mesh,p2mesh];
 const pSt=[
   {hasBall:false,cd:0,dx:0,dz:1,bWas:false},
@@ -229,9 +271,10 @@ scene.registerBeforeRender(()=>{
   const dt=engine.getDeltaTime()/1000;
   for(let i=0;i<2;i++){
     const p=pMesh[i],ps=pSt[i];
-    const{ax,ay,bDown}=getInput(i);
-    p.position.x=Math.max(-51,Math.min(51,p.position.x+ax*SPEED*dt));
-    p.position.z=Math.max(-33,Math.min(33,p.position.z+ay*SPEED*dt));
+    const{ax,ay,bDown,sprint}=getInput(i);
+    const sp=SPEED*(sprint?SPRINT:1);
+    p.position.x=Math.max(-51,Math.min(51,p.position.x+ax*sp*dt));
+    p.position.z=Math.max(-33,Math.min(33,p.position.z+ay*sp*dt));
     p.position.y=0;
     if(Math.hypot(ax,ay)>0.1){ps.dx=ax;ps.dz=ay;}
     heroes[i].setSpeed(Math.min(1,Math.hypot(ax,ay)));
@@ -243,6 +286,7 @@ scene.registerBeforeRender(()=>{
         ps.hasBall=false;
         ballMesh.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(ps.dx*KICK,4,ps.dz*KICK));
         heroes[i].play("kick");
+        rumble(i,140,0.7);
         ps.cd=KCD;
       } else {
         const d=Math.hypot(ballMesh.position.x-p.position.x,ballMesh.position.z-p.position.z);
@@ -280,6 +324,7 @@ function goalScored(who){
   score[who]++;updateHUD();
   heroes.forEach(h=>h.setSpeed(0));
   heroes[who].play(Math.random()<0.5?"siu":"celebrate");
+  rumble(who,600,1.0);
   showGoal(()=>{resetAll();processingGoal=false;});
 }
 
